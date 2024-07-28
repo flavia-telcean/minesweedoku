@@ -6,6 +6,7 @@ var height : int
 var width : int
 var mines : int
 var tiles : Array[Tile]
+var max_neighbours : int = 8
 var generated : bool
 
 var flag_icon: Texture2D = load("res://flag.png")
@@ -39,7 +40,13 @@ func _place_mines(starti : int):
 		var i : int = randi_range(0, self.height * self.width - 1)
 		if(i == starti or self.tiles[i].mine):
 			continue
-		self.tiles[i].mine = bool(randi_range(0, 5))
+		self.tiles[i].mine = true
+		var counts : Array[int] = []
+		_directions(i, func(x) : counts.append(indexize(_count, i)))
+		for c in counts:
+			if(c > self.max_neighbours):
+				self.tiles[c].mine = false
+				continue
 		mines_left -= 1
 
 func _has_up(i: int) -> bool:

@@ -6,38 +6,55 @@ enum GameMode {
     Encrypted,
 }
 
-signal symbol_flagged
+@export_range(5, 20) var board_size : int
 
-var gm : GameMode
+signal symbol_flagged
+signal flagged
+
+@export var gm : GameMode
+var symbol_board : SymbolGrid
+var mine_board : MineGrid
+
+func setup_symbol_board():
+        assert(board_size <= 9)
+
+        symbol_board = SymbolGrid.new()
+        symbol_board.set_name("SymbolGrid")
+        symbol_board.set_n_symbols(board_size)
+
+        symbol_board.connect("symbol_flagged", func(): emit_signal("symbol_flagged"))
+        self.add_child(symbol_board)
+
+func setup_mine_board():
+        mine_board = MineGrid.new()
+        mine_board.set_name("MineGrid")
+        mine_board.set_board_size(board_size, board_size)
+        if(gm == GameMode.Encrypted):
+                mine_board.max_neighbours = board_size - 1
+
+        mine_board.connect("flagged", func(): emit_signal("flagged"))
+        self.add_child(mine_board)
 
 func _ready():
-        gm = GameMode.Encrypted
+        setup_mine_board()
         if(gm == GameMode.Encrypted):
-                pass
-        var mine_count := Label.new()
-        mine_count.set_text(str(self.mine_grid.mine_number()))
-        self.add_child(mine_count)
-
-        self.symbol_grid.connect("symbol_flagged", func(): emit_signal("symbol_flagged"))
-
-func _get(property: StringName) -> Variant:
-        match(property):
-                "mine_grid": return find_child("MineGrid")
-                "symbol_grid": return find_child("SymbolGrid")
-        return null
+                setup_symbol_board()
 
 func can_autoreveal(t : Tile) -> bool:
         match(gm):
-                GameMode.Encrypted: return self.symbol_grid.can_autoreveal(t)
+                GameMode.Encrypted: return symbol_board.can_autoreveal(t)
         return true
 
 func get_number(t : Tile) -> int:
         match(gm):
-                GameMode.Encrypted: return self.symbol_grid.get_number(t)
+                GameMode.Encrypted: return symbol_board.get_number(t)
         return t.number
 
 func get_string(i: int) -> String:
-        return self.symbol_grid._get_symbol(i)
+        return symbol_board.get_symbol(i)
+
+func get_progress_string() -> String:
+        return str(mine_board.flag_count()) + " / " + str(mine_board.mine_count())
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):

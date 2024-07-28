@@ -34,12 +34,8 @@ func _on_gui_input(event):
 			MOUSE_BUTTON_RIGHT:
 				emit_signal("right_click")
 
-func _is_known_mine():
+func is_known_mine():
 	return (self.mine and self.reveal) or self.flag
 
-func _is_candidate():
+func is_candidate():
 	return (self.reveal and self.mine) or self.flag or (not self.reveal and not self.flag)
-
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta):
-	pass

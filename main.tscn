@@ -1,0 +1,39 @@
+[gd_scene load_steps=4 format=3 uid="uid://d3pisrl10fren"]
+
+[ext_resource type="Script" path="res://BoardsFlow.gd" id="1_ygeff"]
+[ext_resource type="Script" path="res://MineGrid.gd" id="2_ydpd5"]
+[ext_resource type="Script" path="res://SymbolGrid.gd" id="3_q5dvi"]
+
+[node name="Control" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = 5.0
+offset_right = 4.0
+offset_bottom = 5.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HFlowContainer" type="HFlowContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.076
+anchor_top = 0.156
+anchor_right = 0.919
+anchor_bottom = 0.6
+offset_top = -0.0880051
+offset_right = 0.312012
+offset_bottom = 0.199982
+theme_override_constants/h_separation = 10
+script = ExtResource("1_ygeff")
+
+[node name="MineGrid" type="GridContainer" parent="HFlowContainer"]
+custom_minimum_size = Vector2(100, 100)
+layout_mode = 2
+script = ExtResource("2_ydpd5")
+
+[node name="SymbolGrid" type="GridContainer" parent="HFlowContainer"]
+layout_mode = 2
+script = ExtResource("3_q5dvi")

@@ -4,10 +4,12 @@ class_name Grid
 var width : int
 var height : int
 var tiles : Array[Tile]
+var tile_size : Vector2
 
 func setup_grid(vertical : Array[String], horizontal : Array[String], left : Callable, middle : Callable, right : Callable):
 	self.set_columns(self.width + 1)
 	var label := Label.new()
+	self.tile_size = Vector2(35, 35)
 	self.add_child(label)
 	for i in range(width):
 		label = Label.new()
@@ -23,15 +25,15 @@ func setup_grid(vertical : Array[String], horizontal : Array[String], left : Cal
 		self.add_child(label)
 		for j in range(width):
 			var a := Tile.new()
-			a.custom_minimum_size = Vector2(35,35)
+			a.custom_minimum_size = tile_size
 			a.connect("left_click", func(): indexize(left, i * width + j))
 			a.connect("middle_click", func(): indexize(middle, i * width + j))
 			a.connect("right_click", func(): indexize(right, i * width + j))
 			self.add_child(a)
 			self.tiles.append(a)
 
-func indexize(f: Callable, i: int):
-	f.call(self.tiles[i], i)
+func indexize(f: Callable, i: int) -> Variant:
+	return f.call(self.tiles[i], i)
 
 func has_up(i: int) -> bool:
 	return i >= self.width

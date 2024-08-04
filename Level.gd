@@ -1,16 +1,15 @@
 extends Control
 
 var label := Label.new()
+var boards : BoardsFlow
 
 func _ready():
-        label.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER)
-        self.find_child("Boards").connect("flagged", set_progress_text)
-        set_progress_text()
-        self.add_child(label)
+	label.set_horizontal_alignment(HORIZONTAL_ALIGNMENT_CENTER)
+	boards = self.find_child("Boards")
+	boards.flagged.connect(set_progress_text)
+	set_progress_text()
+	self.add_child(label)
+	get_node("SolveButton").pressed.connect(boards.solver._on_activate)
 
 func set_progress_text():
-        label.set_text(self.find_child("Boards").get_progress_string())
-
-
-func _process(delta):
-        pass
+	label.set_text(boards.get_progress_string())

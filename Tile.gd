@@ -5,11 +5,13 @@ signal left_click
 signal middle_click
 signal right_click
 
-var a : Label;
-var number: int;
-var mine: bool;
-var flag: bool;
-var reveal: bool;
+var a : Label
+var number: int
+var mine: bool
+var flag: bool
+var reveal: bool
+
+var cell : Cell
 
 var ref : Array;
 

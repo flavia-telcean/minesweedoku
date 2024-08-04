@@ -28,5 +28,12 @@ offset_right = 0.312012
 offset_bottom = 0.199982
 theme_override_constants/h_separation = 30
 script = ExtResource("1_ygeff")
-board_size = 6
-gm = 1
+board_size = 7
+
+[node name="SolveButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 101.0
+offset_top = 445.0
+offset_right = 286.0
+offset_bottom = 476.0
+text = "Solve"

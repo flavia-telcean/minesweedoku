@@ -1,7 +1,8 @@
 extends Grid
 class_name MineGrid
 
-signal flagged
+signal flagged(index : int)
+signal cell_revealed(index : int)
 
 var mines : int
 var max_neighbours : int = 8
@@ -16,9 +17,12 @@ func set_board_size(w : int, h : int):
 	self.height = h
 
 func _ready():
+	self.set_name("MineGrid")
 	self.set_columns(self.width + 1)
 
 	setup_grid([], [], reveal, auto, flag)
+	for t in range(len(tiles)):
+		tiles[t].cell = Cell.new(t)
 	self.mines = self.width * self.height / 3
 	generated = false
 
@@ -33,7 +37,7 @@ func place_mines(starti : int):
 			continue
 		self.tiles[i].mine = true
 		var counts : Array[int] = []
-		directions(i, func(x) : counts.append(indexize(count, i)))
+		directions(i, func(x) : counts.append(indexize(count, x)))
 		for c in counts:
 			if(c > self.max_neighbours):
 				self.tiles[c].mine = false
@@ -71,7 +75,9 @@ func reveal(t : Tile, i: int):
 	var number : int = self.get_parent().get_number(t)
 	if(number == -1):
 		t.set_button_icon(mine_icon)
-		emit_signal("flagged")
+		flagged.emit(i)
+	else:
+		cell_revealed.emit(i)
 	if(self.get_parent().can_autoreveal(t) && number == 0):
 		directions(i, func(x): indexize(reveal, x))
 	
@@ -79,7 +85,7 @@ func flag(t : Tile, i: int):
 	if(t.reveal):
 		return
 	t.flag = not t.flag
-	emit_signal("flagged")
+	flagged.emit(i)
 	if(t.flag):
 		t.set_button_icon(flag_icon)
 	else:
@@ -90,7 +96,7 @@ func idemflag(t : Tile, i: int):
 		return
 	if(not t.flag):
 		t.flag = true
-		emit_signal("flagged")
+		flagged.emit(i)
 	t.flag = true
 	t.set_button_icon(flag_icon)
 
@@ -141,6 +147,112 @@ func flag_count() -> int:
 			count += 1
 	return count
 
-# Called every frame. 'delta' is the elapsed time since the previous frame.
+func region_at_cell(t : Tile, i : int) -> Region:
+	if(not t.reveal or t.is_known_mine()):
+		return
+	var remaining : int = count(tiles[i], i) - count_known(tiles[i], i)
+	var region := Region.new()
+	directions(i, func (x):
+		if(tiles[x].is_known_mine() or tiles[x].reveal):
+			return
+		region.cells.append(tiles[x].cell))
+	region.id = i
+	region.formula = Formula.make_number(remaining)
+	return region
+
+func make_regions() -> Array[Region]:
+	var regions : Array[Region] = []
+	var region_whole := Region.new()
+	for i in range(len(tiles)):
+		if(tiles[i].reveal and not tiles[i].is_known_mine()):
+			var region : Region = region_at_cell(tiles[i], i)
+			if(len(region.cells)):
+				regions.append(region)
+		if(not tiles[i].reveal and not tiles[i].is_known_mine()):
+			region_whole.cells.append(tiles[i].cell)
+	region_whole.id = -1
+	region_whole.formula = Formula.make_number(mine_count() - flag_count())
+	regions.append(region_whole)
+	return regions
+
+var lines : Array[Line2D] = []
+
+func distance(x : Vector2, y : Vector2) -> float:
+	return y.distance_to(x)
+
+func find_closest_point_and_erase(points : Array[Vector2], point : Vector2) -> Vector2:
+	var distances : Array = points.map(func(x): return point.distance_to(x))
+	var p : Vector2 = points[distances.find(distances.min())]
+	points.erase(p)
+	return p
+
+func mst(points : Array[Vector2]) -> Array[Vector2]:
+	if(not points):
+		return []
+	var orig_points : Array[Vector2] = points.duplicate()
+	var center : Vector2 = orig_points.reduce(func(x, y): return x + y)
+	var root : Vector2 = find_closest_point_and_erase(orig_points, center)
+	
+	var mstree_walk : Array[Vector2] = [root]
+	
+	while(len(orig_points)):
+		var last_point : Vector2 = root
+		var current_point : Vector2 = find_closest_point_and_erase(orig_points, last_point)
+		mstree_walk.append(current_point)
+		while(len(orig_points) and current_point != last_point):
+			last_point = current_point
+			current_point = find_closest_point_and_erase(orig_points, current_point)
+			mstree_walk.append(current_point)
+		if(not orig_points):
+			break
+		var backtrack : Array[Vector2] = mstree_walk.duplicate()
+		backtrack.reverse()
+		mstree_walk += backtrack
+	return mstree_walk
+
+func get_tile_position(t : Tile) -> Vector2:
+	return t.get_screen_position() - get_parent().get_screen_position()
+
+func get_tile_subposition(t : Tile, s : int) -> Vector2:
+	return self.tile_size * Vector2(float(s % 3) / 3, float(s / 3) / 3)
+
+var cell_positions : Dictionary = {}
+
+func get_position_id(i : int, ri : int) -> int:
+	return hash(i - ri) + hash(i + ri)
+
+func get_point_position(id : int, region_id : int) -> Vector2:
+	var position_id : int = get_position_id(id, region_id)
+	if(position_id not in cell_positions):
+		tiles[id].cell.next_subposition += 1
+		cell_positions[position_id] =  get_tile_position(tiles[id]) + get_tile_subposition(tiles[id], tiles[id].cell.next_subposition)
+	return cell_positions[position_id]
+
+func create_line(cells : Array[int], id : int):
+	if(id < 0):
+		return
+	var positions : Array[Vector2] = []
+	positions.assign(cells.map(func(x): return get_point_position(x, id)))
+	var line := Line2D.new()
+	line.points = mst(positions)
+	line.name = str(id)
+	line.default_color = Color(.2 + randf(), .1 + randf(), .3 + randf())
+	get_parent().add_child(line)
+	lines.append(line)
+
+func remove_line(id : int):
+	lines = lines.filter(func(line):
+		if(line.id != id):
+			get_parent().remove_child(line)
+			line.queue_free()
+		return line.id == id)
+
+func remove_point(id : int, region : int):
+	for i in lines:
+		if(cell_positions[get_position_id(id, region)] not in i.points):
+			continue
+		i.remove_point(i.points.find(cell_positions[get_position_id(id, region)]))
+	cell_positions.erase(id)
+
 func _process(delta):
 	pass

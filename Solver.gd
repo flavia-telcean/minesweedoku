@@ -168,12 +168,9 @@ func new_region(i : int):
 		region.create_line(mine_grid)
 	for r in regions:
 		if(r.has_cell(i)):
-			r.clear_cell(i)
+			r.clear_cell(mine_grid, i)
 
 func _cell_revealed(i : int):
-	for r in regions:
-		if(r.has_cell(i)):
-			mine_grid.remove_point(i, r.id)
 	new_region(i)
 
 func _remove_mine(i : int):
@@ -181,8 +178,7 @@ func _remove_mine(i : int):
 		return
 	for r in regions:
 		if(r.has_cell(i)):
-			mine_grid.remove_point(i, r.id)
-			r.remove_mine(i)
+			r.remove_mine(mine_grid, i)
 
 func remove_empty_regions():
 	regions = regions.filter(func(r): return len(r.cells) > 0)

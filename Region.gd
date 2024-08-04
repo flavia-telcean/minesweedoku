@@ -4,11 +4,13 @@ var cells : Array[Cell]
 var formula : Formula
 var id : int
 
-func remove_mine(old_id : int):
+func remove_mine(mine_grid : MineGrid, old_id : int):
 	cells = cells.filter(func(x): return x.id != old_id)
 	formula.remove_mine()
+	mine_grid.remove_point(old_id, self.id, str(formula.number))
 
-func clear_cell(old_id : int):
+func clear_cell(mine_grid : MineGrid, old_id : int):
+	mine_grid.remove_point(old_id, self.id, str(formula.number))
 	cells = cells.filter(func(x): return x.id != old_id)
 
 func add_cell(new_id : int, tile : Tile):
@@ -45,4 +47,4 @@ func cell_ids() -> Array[int]:
 	return ids
 
 func create_line(mine_grid : MineGrid):
-	mine_grid.create_line(cell_ids(), id)
+	mine_grid.create_line(cell_ids(), id, str(formula.number))

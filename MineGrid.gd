@@ -228,7 +228,7 @@ func get_point_position(id : int, region_id : int) -> Vector2:
 		cell_positions[position_id] =  get_tile_position(tiles[id]) + get_tile_subposition(tiles[id], tiles[id].cell.next_subposition)
 	return cell_positions[position_id]
 
-func create_line(cells : Array[int], id : int):
+func create_line(cells : Array[int], id : int, label : String):
 	if(id < 0):
 		return
 	var positions : Array[Vector2] = []
@@ -236,7 +236,11 @@ func create_line(cells : Array[int], id : int):
 	var line := Line2D.new()
 	line.points = mst(positions)
 	line.name = str(id)
+	line.width = 5
 	line.default_color = Color(.2 + randf(), .1 + randf(), .3 + randf())
+	positions.map(func(p : Vector2):
+		var a := LineLabel.new(p, label, line.default_color)
+		line.add_child(a))
 	get_parent().add_child(line)
 	lines.append(line)
 
@@ -247,11 +251,20 @@ func remove_line(id : int):
 			line.queue_free()
 		return line.id == id)
 
-func remove_point(id : int, region : int):
+func remove_point(id : int, region : int, new_label : String = ""):
 	for i in lines:
 		if(cell_positions[get_position_id(id, region)] not in i.points):
 			continue
-		i.remove_point(i.points.find(cell_positions[get_position_id(id, region)]))
+		var point_position : Vector2 = cell_positions[get_position_id(id, region)]
+		var index : int = i.points.find(point_position)
+		if(index < 0):
+			return
+		if(new_label):
+			i.get_children().map(func(x): x.set_text(new_label))
+		i.remove_point(index)
+		for label in i.get_children():
+			if(label.position == point_position):
+				label.queue_free()
 	cell_positions.erase(id)
 
 func _process(delta):

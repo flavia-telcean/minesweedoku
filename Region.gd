@@ -7,10 +7,10 @@ var id : int
 func remove_mine(mine_grid : MineGrid, old_id : int):
 	cells = cells.filter(func(x): return x.id != old_id)
 	formula.remove_mine()
-	mine_grid.remove_point(old_id, self.id, str(formula.number))
+	mine_grid.remove_point(old_id, self.id, str(formula))
 
 func clear_cell(mine_grid : MineGrid, old_id : int):
-	mine_grid.remove_point(old_id, self.id, str(formula.number))
+	mine_grid.remove_point(old_id, self.id, str(formula))
 	cells = cells.filter(func(x): return x.id != old_id)
 
 func add_cell(new_id : int, tile : Tile):

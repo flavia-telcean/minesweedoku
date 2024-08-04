@@ -390,3 +390,31 @@ func duplicate() -> Formula:
 	var x := Formula.new()
 	x.copy(self)
 	return x
+
+func _to_string():
+	assertions()
+	match(type):
+		Type.Number:
+			return str(number)
+		Type.Variable:
+			return "#" + str(varnum % 10)
+		Type.False:
+			return "!"
+		Type.Any:
+			return "?"
+		Type.Plus:
+			return c1._to_string() + " + " + c2._to_string()
+		Type.Minus:
+			return c1._to_string() + " - (" + c2._to_string() + ")"
+		Type.Slash:
+			if(c1.type == Type.Number and c2.type == Type.Number):
+				return c1._to_string() + " / " + c2._to_string()
+			return "(" + c1._to_string() + ") / (" + c2._to_string() + ")"
+		Type.Gte:
+			if(c1.type == Type.Number):
+				return c1._to_string() + "+"
+			return "(" + c1._to_string() + ")+"
+		Type.Gte:
+			if(c1.type == Type.Number):
+				return c1._to_string() + "-"
+			return "(" + c1._to_string() + ")-"

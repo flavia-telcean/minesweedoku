@@ -160,19 +160,23 @@ func region_at_cell(t : Tile, i : int) -> Region:
 	region.formula = Formula.make_number(remaining)
 	return region
 
+func special_regions() -> Array[Region]:
+	var region_whole := Region.new()
+	tiles \
+		.filter(func (t): return not t.reveal and not t.is_known_mine()) \
+		.map(func (t): region_whole.cells.append(t.cell))
+	region_whole.id = -1
+	region_whole.formula = Formula.make_number(mine_count() - flag_count())
+	return [region_whole]
+
 func make_regions() -> Array[Region]:
 	var regions : Array[Region] = []
-	var region_whole := Region.new()
 	for i in range(len(tiles)):
 		if(tiles[i].reveal and not tiles[i].is_known_mine()):
 			var region : Region = region_at_cell(tiles[i], i)
 			if(len(region.cells)):
 				regions.append(region)
-		if(not tiles[i].reveal and not tiles[i].is_known_mine()):
-			region_whole.cells.append(tiles[i].cell)
-	region_whole.id = -1
-	region_whole.formula = Formula.make_number(mine_count() - flag_count())
-	regions.append(region_whole)
+	regions += special_regions()
 	return regions
 
 var lines : Array[Line2D] = []
@@ -229,7 +233,7 @@ func get_point_position(id : int, region_id : int) -> Vector2:
 	return cell_positions[position_id]
 
 func create_line(cells : Array[int], id : int, label : String):
-	if(id < 0):
+	if(len(cells) > 12):
 		return
 	var positions : Array[Vector2] = []
 	positions.assign(cells.map(func(x): return get_point_position(x, id)))

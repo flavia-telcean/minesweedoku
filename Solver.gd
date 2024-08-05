@@ -174,6 +174,14 @@ func _ready():
 	rules.append(Rule2.from_string("(x) (x) (0) (?) (?) (none) (none) (clear)"))
 	rules.append(Rule1.from_string("(x) (x) (bomb)"))
 	rules.append(Rule1.from_string("(0) (x) (clear)"))
+	special_regions()
+	get_parent().get_parent().get_node("SolveButton").pressed.connect(_on_activate)
+	get_parent().get_parent().get_node("RemoveButton").pressed.connect(remove_regions)
+	get_parent().get_parent().get_node("SpecialButton").pressed.connect(special_regions)
+
+
+func special_regions():
+	mine_grid.special_regions().map(new_region)
 
 func new_region(region : Region):
 	regions.append(region)

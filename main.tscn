@@ -37,3 +37,19 @@ offset_top = 445.0
 offset_right = 286.0
 offset_bottom = 476.0
 text = "Solve"
+
+[node name="RemoveButton" type="Button" parent="."]
+layout_mode = 2
+offset_left = 101.0
+offset_top = 487.0
+offset_right = 286.0
+offset_bottom = 520.0
+text = "Remove regions"
+
+[node name="SpecialButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 100.0
+offset_top = 530.0
+offset_right = 288.0
+offset_bottom = 560.0
+text = "Special regions"

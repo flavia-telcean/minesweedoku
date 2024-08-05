@@ -14,13 +14,11 @@ class Action:
 		NewRegion,
 	}
 	
-	var solver : Solver
-	
 	var type : Type
 	var regionformula : Formula
 	var regionid : int
 	
-	static func from_tree(tree : Array) -> Action:
+	static func from_tree(tree : Array, regionids : Dictionary = {}) -> Action:
 		assert(len(tree))
 		var a := Action.new()
 		match(tree[0].type):
@@ -32,15 +30,17 @@ class Action:
 				a.type = Type.Clear
 			Parser.Tokens.Region:
 				a.type = Type.NewRegion
-				assert(len(tree) == 3 and tree[1].type == Formula.Type.Number)
-				a.regionid = tree[1].number
+				assert(len(tree) == 3 and tree[1].type == Parser.Tokens.Number)
+				if(tree[1].number not in regionids):
+					regionids[tree[1].number] = randi()
+				a.regionid = regionids[tree[1].number]
 				var parser := Parser.new()
 				a.regionformula = parser.parse(tree[2])
 			_:
 				assert(false)
 		return a
 	
-	func apply(mine_grid : MineGrid, cells : Array[Cell]):
+	func apply(solver : Solver, mine_grid : MineGrid, variables : Dictionary, cells : Array[Cell]):
 		match(type):
 			Type.None: pass
 			Type.Bomb:
@@ -58,7 +58,9 @@ class Action:
 				var region := Region.new()
 				region.cells = cells.duplicate()
 				region.id = regionid
-				solver.regions.append(region)
+				region.formula = regionformula.duplicate()
+				region.formula.replace_variables(variables)
+				solver.new_region(region)
 
 class Rule1:
 	var region_formula : Formula
@@ -81,15 +83,21 @@ class Rule1:
 	func applies_to_subregion(f : Formula, cells : int, found : Dictionary):
 		return f.generalizes(Formula.make_number(cells), false, found)
 	
-	func applies(r : Region):
+	func applies(r : Region) -> Dictionary:
 		var found : Dictionary = {}
 		var rg : bool = region_formula.generalizes(r.formula, true, found)
 		var rs : bool = applies_to_subregion(region_size_formula, r.count_cells(), found)
-		return rg and rs
+		if(rg and rs):
+			if(found):
+				return found
+			return {-1: Formula.make_false()}
+		return {}
 	
-	func apply(mine_grid : MineGrid, r : Region):
-		assert(applies(r))
-		region_action.apply(mine_grid, r.cells)
+	func apply(solver : Solver, mine_grid : MineGrid, r : Region):
+		var variables : Dictionary = applies(r)
+		if(not variables):
+			return
+		region_action.apply(solver, mine_grid, variables, r.cells)
 
 class Rule2:
 	var region1_formula : Formula
@@ -126,7 +134,7 @@ class Rule2:
 	func applies_to_subregion(f : Formula, cells : int, found : Dictionary):
 		return f.generalizes(Formula.make_number(cells), false, found)
 	
-	func applies(r1 : Region, r2 : Region):
+	func applies(r1 : Region, r2 : Region) -> Dictionary:
 		var found : Dictionary = {}
 		var r1f : Formula = region1_formula.duplicate()
 		var r2f : Formula = region2_formula.duplicate()
@@ -143,13 +151,19 @@ class Rule2:
 		var r1s : bool = applies_to_subregion(r1sf, cells_in_1_not_in_2, found)
 		var r2s : bool = applies_to_subregion(r2sf, cells_in_2_not_in_1, found)
 		var r1x2s : bool = applies_to_subregion(r1x2sf, cells_intersection, found)
-		return r1g and r1s and r2g and r2s and r1x2s
+		if(r1g and r1s and r2g and r2s and r1x2s):
+			if(found):
+				return found
+			return {-1 : Formula.make_false()}
+		return {}
 	
-	func apply(mine_grid : MineGrid, r1 : Region, r2 : Region):
-		assert(applies(r1, r2))
-		region1_action.apply(mine_grid, r1.cells.filter(func (x) : return x not in r2.cells))
-		region2_action.apply(mine_grid, r2.cells.filter(func (x) : return x not in r1.cells))
-		region1x2_action.apply(mine_grid, r1.cells.filter(func (x) : return x in r2.cells))
+	func apply(solver : Solver, mine_grid : MineGrid, r1 : Region, r2 : Region):
+		var variables : Dictionary = applies(r1, r2)
+		if(not variables):
+			return
+		region1_action.apply(solver, mine_grid, variables, r1.cells.filter(func (x) : return x not in r2.cells))
+		region2_action.apply(solver, mine_grid, variables, r2.cells.filter(func (x) : return x not in r1.cells))
+		region1x2_action.apply(solver, mine_grid, variables, r1.cells.filter(func (x) : return x in r2.cells))
 
 var parser := Parser.new()
 var rules : Array = []
@@ -161,17 +175,20 @@ func _ready():
 	rules.append(Rule1.from_string("(x) (x) (bomb)"))
 	rules.append(Rule1.from_string("(0) (x) (clear)"))
 
-func new_region(i : int):
+func new_region(region : Region):
+	regions.append(region)
+	region.create_line(mine_grid)
+
+func new_region_at_cell(i : int):
 	var region : Region = mine_grid.indexize(mine_grid.region_at_cell, i)
 	if(region):
-		regions.append(region)
-		region.create_line(mine_grid)
+		new_region(region)
 	for r in regions:
 		if(r.has_cell(i)):
 			r.clear_cell(mine_grid, i)
 
 func _cell_revealed(i : int):
-	new_region(i)
+	new_region_at_cell(i)
 
 func _remove_mine(i : int):
 	if(not mine_grid.tiles[i].is_known_mine()): #FIXME
@@ -192,13 +209,12 @@ func remove_duplicate_regions():
 				to_be_removed.append(regions[j].id)
 	regions = regions.filter(func(r): return r.id not in to_be_removed)
 
-func _on_activate():
+func step():
 	for r in range(len(regions)):
 		for rule in rules:
 			if(rule.number_of_regions != 1):
 				continue
-			if(rule.applies(regions[r])):
-				rule.apply(mine_grid, regions[r])
+			rule.apply(self, mine_grid, regions[r])
 	
 	for r1 in range(len(regions)):
 		for r2 in range(len(regions)):
@@ -207,8 +223,12 @@ func _on_activate():
 			for rule in rules:
 				if(rule.number_of_regions != 2):
 					continue
-				if(rule.applies(regions[r1], regions[r2])):
-					rule.apply(mine_grid, regions[r1], regions[r2])
+				rule.apply(self, mine_grid, regions[r1], regions[r2])
 
+func remove_regions():
 	remove_empty_regions()
 	remove_duplicate_regions()
+
+func _on_activate():
+	step()
+	remove_regions()

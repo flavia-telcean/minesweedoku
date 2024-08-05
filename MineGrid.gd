@@ -26,7 +26,7 @@ func _ready():
 	self.mines = self.width * self.height / 3
 	generated = false
 
-	get_parent().connect("symbol_flagged", reveal_symbols)
+	get_parent().symbol_flagged.connect(reveal_symbols)
 
 func place_mines(starti : int):
 	generated = true

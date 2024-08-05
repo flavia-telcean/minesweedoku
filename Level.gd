@@ -9,7 +9,6 @@ func _ready():
 	boards.flagged.connect(set_progress_text)
 	set_progress_text()
 	self.add_child(label)
-	get_node("SolveButton").pressed.connect(boards.solver._on_activate)
 
 func set_progress_text():
 	label.set_text(boards.get_progress_string())

@@ -42,8 +42,7 @@ func count_cells() -> int:
 
 func cell_ids() -> Array[int]:
 	var ids : Array[int] = []
-	for cell in cells:
-		ids.append(cell.id)
+	ids.assign(cells.map(func (cell) : return cell.id))
 	return ids
 
 func create_line(mine_grid : MineGrid):

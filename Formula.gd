@@ -280,7 +280,7 @@ func is_solution(vars : Dictionary, other : Formula) -> bool:
 			var is_c2_constant : bool = len(c2.variables) == 0
 			if(not is_c1_constant):
 				result = result or c1.is_solution(vars, Formula.make_minus(other, c2))
-			if(not is_c1_constant):
+			if(not is_c2_constant):
 				result = result or c2.is_solution(vars, Formula.make_minus(other, c1))
 			if(is_c1_constant and is_c2_constant):
 				assert(false)

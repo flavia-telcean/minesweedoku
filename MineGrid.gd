@@ -246,16 +246,19 @@ func create_line(cells : Array[int], id : int, label : String):
 
 func remove_line(id : int):
 	lines = lines.filter(func(line):
-		if(line.id != id):
+		if(line.get_name().to_int() == id):
 			get_parent().remove_child(line)
 			line.queue_free()
-		return line.id == id)
+		return line.get_name().to_int() != id)
 
 func remove_point(id : int, region : int, new_label : String = ""):
+	if(get_position_id(id, region) not in cell_positions):
+		print("Attempt to remove point that doesn't exist: ", id, " of ", region)
+		return
 	for i in lines:
-		if(cell_positions[get_position_id(id, region)] not in i.points):
-			continue
 		var point_position : Vector2 = cell_positions[get_position_id(id, region)]
+		if(point_position not in i.points):
+			continue
 		var index : int = i.points.find(point_position)
 		if(index < 0):
 			return
@@ -265,7 +268,7 @@ func remove_point(id : int, region : int, new_label : String = ""):
 		for label in i.get_children():
 			if(label.position == point_position):
 				label.queue_free()
-	cell_positions.erase(id)
+		cell_positions.erase(point_position)
 
 func _process(delta):
 	pass

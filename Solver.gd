@@ -183,8 +183,16 @@ func _remove_mine(i : int):
 func remove_empty_regions():
 	regions = regions.filter(func(r): return len(r.cells) > 0)
 
+func remove_duplicate_regions():
+	var to_be_removed : Array[int] = []
+	for i in range(len(regions)):
+		for j in range(i + 1, len(regions)):
+			if(regions[i].equal(regions[j])):
+				regions[j].remove_line(mine_grid)
+				to_be_removed.append(regions[j].id)
+	regions = regions.filter(func(r): return r.id not in to_be_removed)
+
 func _on_activate():
-	
 	for r in range(len(regions)):
 		for rule in rules:
 			if(rule.number_of_regions != 1):
@@ -203,3 +211,4 @@ func _on_activate():
 					rule.apply(mine_grid, regions[r1], regions[r2])
 
 	remove_empty_regions()
+	remove_duplicate_regions()

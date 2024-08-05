@@ -48,3 +48,16 @@ func cell_ids() -> Array[int]:
 
 func create_line(mine_grid : MineGrid):
 	mine_grid.create_line(cell_ids(), id, str(formula.number))
+
+func remove_line(mine_grid : MineGrid):
+	mine_grid.remove_line(id)
+
+func equal(other : Region) -> bool:
+	if(len(cells) != len(other.cells)):
+		return false
+	cells.sort_custom(func (cell1, cell2): return cell1.id < cell2.id)
+	other.cells.sort_custom(func (cell1, cell2): return cell1.id < cell2.id)
+	for i in range(len(cells)):
+		if(cells[i].id != other.cells[i].id):
+			return false
+	return formula.equal(other.formula)

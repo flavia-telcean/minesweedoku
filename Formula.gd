@@ -130,7 +130,7 @@ func inequality_cleanup():
 	
 	if(c1.type == type):
 		c1.copy(c1.c1)
-	else:
+	elif(c1.type == Type.Gte or c1.type == Type.Lte):
 		copy(c1.c1)
 
 func cleanup():

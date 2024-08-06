@@ -40,7 +40,7 @@ class Action:
 				assert(false)
 		return a
 	
-	func apply(solver : Solver, mine_grid : MineGrid, variables : Dictionary, cells : Array[Cell]):
+	func apply(solver : Solver, mine_grid : MineGrid, variables : Dictionary, cells : Array[Cell], applicationid : int):
 		match(type):
 			Type.None: pass
 			Type.Bomb:
@@ -50,14 +50,14 @@ class Action:
 				for cell in cells:
 					mine_grid.indexize(mine_grid.reveal, cell.id)
 			Type.NewRegion:
-				var found_regions : Array[Region] = solver.regions.filter(func (x): return x.id == regionid)
+				var found_regions : Array[Region] = solver.regions.filter(func (x): return x.id == hash(applicationid + regionid))
 				assert(len(found_regions) <= 1)
 				if(len(found_regions) == 1):
 					found_regions[0].cells += cells
 					return
 				var region := Region.new()
 				region.cells = cells.duplicate()
-				region.id = regionid
+				region.id = hash(applicationid + regionid)
 				region.formula = regionformula.duplicate()
 				region.formula.replace_variables(variables)
 				solver.new_region(region)
@@ -161,9 +161,10 @@ class Rule2:
 		var variables : Dictionary = applies(r1, r2)
 		if(not variables):
 			return
-		region1_action.apply(solver, mine_grid, variables, r1.cells.filter(func (x) : return x not in r2.cells))
-		region2_action.apply(solver, mine_grid, variables, r2.cells.filter(func (x) : return x not in r1.cells))
-		region1x2_action.apply(solver, mine_grid, variables, r1.cells.filter(func (x) : return x in r2.cells))
+		var applicationid : int = randi()
+		region1_action.apply(solver, mine_grid, variables, r1.cells.filter(func (x) : return x not in r2.cells), applicationid)
+		region2_action.apply(solver, mine_grid, variables, r2.cells.filter(func (x) : return x not in r1.cells), applicationid)
+		region1x2_action.apply(solver, mine_grid, variables, r1.cells.filter(func (x) : return x in r2.cells), applicationid)
 
 var parser := Parser.new()
 var rules : Array = []

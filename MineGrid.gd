@@ -243,7 +243,7 @@ func create_line(cells : Array[int], id : int, label : String):
 	line.width = 5
 	line.default_color = Color(.2 + randf(), .1 + randf(), .3 + randf())
 	positions.map(func(p : Vector2):
-		var a := LineLabel.new(p, label, line.default_color)
+		var a := LineLabel.new(p, label, line)
 		line.add_child(a))
 	get_parent().add_child(line)
 	lines.append(line)

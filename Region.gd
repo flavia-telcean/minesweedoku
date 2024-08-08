@@ -46,7 +46,7 @@ func cell_ids() -> Array[int]:
 	return ids
 
 func create_line(mine_grid : MineGrid):
-	mine_grid.create_line(cell_ids(), id, str(formula.number))
+	mine_grid.create_line(cell_ids(), id, str(formula))
 
 func remove_line(mine_grid : MineGrid):
 	mine_grid.remove_line(id)

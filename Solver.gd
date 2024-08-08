@@ -17,6 +17,7 @@ class Action:
 	var type : Type
 	var regionformula : Formula
 	var regionid : int
+	var bounds : Array = [0,1,2,3,4,5,6,7,8]
 	
 	static func from_tree(tree : Array, regionids : Dictionary = {}) -> Action:
 		assert(len(tree))
@@ -50,6 +51,8 @@ class Action:
 				for cell in cells:
 					mine_grid.indexize(mine_grid.reveal, cell.id)
 			Type.NewRegion:
+				if(len(cells) == 0):
+					return
 				var found_regions : Array[Region] = solver.regions.filter(func (x): return x.id == hash(applicationid + regionid))
 				assert(len(found_regions) <= 1)
 				if(len(found_regions) == 1):
@@ -61,6 +64,14 @@ class Action:
 				region.formula = regionformula.duplicate()
 				region.formula.replace_variables(variables)
 				solver.new_region(region)
+	
+	func is_unbounded(variables : Dictionary) -> bool:
+		if(not regionformula):
+			return false
+		for v in variables:
+			if(v in regionformula.variables and variables[v] not in bounds):
+				return true
+		return false
 
 class Rule1:
 	var region_formula : Formula
@@ -159,6 +170,8 @@ class Rule2:
 	
 	func apply(solver : Solver, mine_grid : MineGrid, r1 : Region, r2 : Region):
 		var variables : Dictionary = applies(r1, r2)
+		if(region1_action.is_unbounded(variables) or region2_action.is_unbounded(variables) or region1x2_action.is_unbounded(variables)):
+			return
 		if(not variables):
 			return
 		var applicationid : int = randi()

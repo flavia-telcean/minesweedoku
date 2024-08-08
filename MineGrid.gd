@@ -260,6 +260,7 @@ func remove_point(id : int, region : int, new_label : String = ""):
 		print("Attempt to remove point that doesn't exist: ", id, " of ", region)
 		return
 	for i in lines:
+		tiles[id].cell.next_subposition -= 1
 		var point_position : Vector2 = cell_positions[get_position_id(id, region)]
 		if(point_position not in i.points):
 			continue

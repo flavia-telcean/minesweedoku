@@ -80,16 +80,19 @@ class Rule1:
 	
 	var number_of_regions : int = 1
 	
-	static func from_string(string : String) -> Rule1:
+	static func from_tree(tree : Array) -> Rule1:
 		var rule := Rule1.new()
 		var parser := Parser.new()
 		
-		var tree : Array = parser.make_tree_string(string)
 		assert(len(tree) == 3)
 		rule.region_formula = parser.parse(tree[0])
 		rule.region_size_formula = parser.parse(tree[1])
 		rule.region_action = Action.from_tree(tree[2])
 		return rule
+	
+	static func from_string(string : String) -> Rule1:
+		var parser := Parser.new()
+		return Rule1.from_tree(parser.make_tree_string(string))
 	
 	func applies_to_subregion(f : Formula, cells : int, found : Dictionary):
 		return f.generalizes(Formula.make_number(cells), false, found)
@@ -124,11 +127,10 @@ class Rule2:
 	
 	var number_of_regions : int = 2
 	
-	static func from_string(string : String) -> Rule2:
+	static func from_tree(tree : Array) -> Rule2:
 		var rule := Rule2.new()
 		var parser := Parser.new()
 		
-		var tree : Array = parser.make_tree_string(string)
 		assert(len(tree) == 8)
 		rule.region1_formula = parser.parse(tree[0])
 		rule.region2_formula = parser.parse(tree[1])
@@ -141,6 +143,10 @@ class Rule2:
 		rule.region1x2_action = Action.from_tree(tree[6])
 		rule.region2_action = Action.from_tree(tree[7])
 		return rule
+	
+	static func from_string(string : String) -> Rule2:
+		var parser := Parser.new()
+		return Rule2.from_tree(parser.make_tree_string(string))
 	
 	func applies_to_subregion(f : Formula, cells : int, found : Dictionary):
 		return f.generalizes(Formula.make_number(cells), false, found)
@@ -179,15 +185,27 @@ class Rule2:
 		region2_action.apply(solver, mine_grid, variables, r2.cells.filter(func (x) : return x not in r1.cells), applicationid)
 		region1x2_action.apply(solver, mine_grid, variables, r1.cells.filter(func (x) : return x in r2.cells), applicationid)
 
+class Rule:
+	static func from_string(s : String):
+		var parser := Parser.new()
+		var tree : Array = parser.make_tree_string(s)
+		assert(tree and tree[0].type == Parser.Tokens.Number)
+		if(tree[0].number == 1):
+			return Rule1.from_tree(tree.slice(1))
+		elif(tree[0].number == 2):
+			return Rule2.from_tree(tree.slice(1))
+		assert(false)
+
 var parser := Parser.new()
 var rules : Array = []
 
 func _ready():
-	rules.append(Rule2.from_string("(y) (x+y) (?) (?) (x) (clear) (none) (bomb)"))
-	#rules.append(Rule2.from_string("(1) (x+1) (?) (?) (x) (clear) (none) (bomb)"))
-	rules.append(Rule2.from_string("(x) (x) (0) (?) (?) (none) (none) (clear)"))
-	rules.append(Rule1.from_string("(x) (x) (bomb)"))
-	rules.append(Rule1.from_string("(0) (x) (clear)"))
+	var rules_file := FileAccess.open("rules.txt", FileAccess.READ)
+	var line : String = rules_file.get_line()
+	while(not rules_file.eof_reached()):
+		if(len(line) > 0 and line[0] != "#"):
+			rules.append(Rule.from_string(line))
+		line = rules_file.get_line()
 	special_regions()
 	get_parent().get_parent().get_node("SolveButton").pressed.connect(_on_activate)
 	get_parent().get_parent().get_node("RemoveButton").pressed.connect(remove_regions)

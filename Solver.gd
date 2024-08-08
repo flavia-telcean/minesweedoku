@@ -250,20 +250,22 @@ func remove_duplicate_regions():
 	regions = regions.filter(func(r): return r.id not in to_be_removed)
 
 func step():
-	for r in range(len(regions)):
+	var old_regions : Array[Region] = regions.duplicate()
+	
+	for r in range(len(old_regions)):
 		for rule in rules:
 			if(rule.number_of_regions != 1):
 				continue
-			rule.apply(self, mine_grid, regions[r])
+			rule.apply(self, mine_grid, old_regions[r])
 	
-	for r1 in range(len(regions)):
-		for r2 in range(len(regions)):
+	for r1 in range(len(old_regions)):
+		for r2 in range(len(old_regions)):
 			if(r1 == r2):
 				continue
 			for rule in rules:
 				if(rule.number_of_regions != 2):
 					continue
-				rule.apply(self, mine_grid, regions[r1], regions[r2])
+				rule.apply(self, mine_grid, old_regions[r1], old_regions[r2])
 
 func remove_regions():
 	remove_empty_regions()

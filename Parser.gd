@@ -216,8 +216,12 @@ func parse(tree : Array) -> Formula:
 				first_tree.append(j)
 			match(i):
 				Tokens.Plus:
+					if(len(second_tree) == 0):
+						return Formula.make_gte(parse(first_tree))
 					return Formula.make_plus(parse(first_tree), parse(second_tree))
 				Tokens.Minus:
+					if(len(second_tree) == 0):
+						return Formula.make_lte(parse(first_tree))
 					return Formula.make_minus(parse(first_tree), parse(second_tree))
 				_: assert(false)
 			

@@ -58,6 +58,18 @@ static func make_number(i : int) -> Formula:
 	x.number = i
 	x.varnum = -1
 	return x
+static func make_unary_operator(f : Formula, o : Type) -> Formula:
+	var x := Formula.new()
+	x.type = o
+	x.variables = f.variables.duplicate()
+	x.c1 = f.duplicate()
+	x.number = 0
+	x.varnum = -1
+	return x
+static func make_gte(f : Formula) -> Formula:
+	return make_unary_operator(f, Type.Gte)
+static func make_lte(f : Formula) -> Formula:
+	return make_unary_operator(f, Type.Lte)
 
 func assertions():
 	match(type):
@@ -194,7 +206,13 @@ func try_solving_for_variable(varid : int) -> Formula:
 	#		print("TODO :211")
 
 func equal(other : Formula) -> bool:
-	return type == other.type and number == other.number and varnum == other.varnum and c1 == other.c1 and c2 == other.c2
+	if(type != other.type):
+		return false
+	if(c1 and not c1.equal(other.c1)):
+		return false
+	if(c2 and not c2.equal(other.c2)):
+		return false
+	return number == other.number and varnum == other.varnum
 
 func replace_variables(dict : Dictionary):
 	assertions()
@@ -213,6 +231,10 @@ func replace_variables(dict : Dictionary):
 		Type.Slash:
 			c1.replace_variables(dict)
 			c2.replace_variables(dict)
+		Type.Gte:
+			c1.replace_variables(dict)
+		Type.Lte:
+			c1.replace_variables(dict)
 	cleanup()
 
 func solve_equation(other : Formula, dict : Dictionary = {}) -> Dictionary:
@@ -296,6 +318,23 @@ func is_solution(vars : Dictionary, other : Formula) -> bool:
 			return result
 		Type.Slash:
 			return is_solution(vars, c1) or is_solution(vars, c2)
+		Type.Gte:
+			assert(other.type == Type.Number)
+			match(c1.type):
+				Type.Number: return number >= other.number
+				Type.Plus:
+					var result : bool = false
+					var is_c1_constant : bool = len(c1.c1.variables) == 0
+					var is_c2_constant : bool = len(c1.c2variables) == 0
+					if(not is_c1_constant):
+						result = result or c1.c1.is_solution(vars, Formula.make_minus(other, c1.c2))
+					if(not is_c1_constant):
+						result = result or c1.c2.is_solution(vars, Formula.make_minus(other, c1.c1))
+					if(is_c1_constant and is_c2_constant):
+						assert(false)
+					return result
+				_:
+					assert(false)
 		_:
 			assert(false)
 	return false
@@ -414,7 +453,7 @@ func _to_string():
 			if(c1.type == Type.Number):
 				return c1._to_string() + "+"
 			return "(" + c1._to_string() + ")+"
-		Type.Gte:
+		Type.Lte:
 			if(c1.type == Type.Number):
 				return c1._to_string() + "-"
 			return "(" + c1._to_string() + ")-"

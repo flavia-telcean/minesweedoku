@@ -20,22 +20,20 @@ class Action:
 	var regionid : int
 	var bounds : Array[int]
 	
-	static func from_tree(tree : Array) -> Action:
-		assert(len(tree))
+	static func from_json(d : Dictionary) -> Action:
 		var a := Action.new()
-		match(tree[0].type):
-			Parser.Tokens.None:
+		match(d["type"]):
+			"none":
 				a.type = Type.None
-			Parser.Tokens.Bomb:
+			"bomb":
 				a.type = Type.Bomb
-			Parser.Tokens.Clear:
+			"clear":
 				a.type = Type.Clear
-			Parser.Tokens.Region:
+			"region":
 				a.type = Type.NewRegion
-				assert(len(tree) == 3 and tree[1].type == Parser.Tokens.Number)
-				a.regionid = tree[1].number
+				a.regionid = d["id"]
 				var parser := Parser.new()
-				a.regionformula = parser.parse(tree[2])
+				a.regionformula = parser.parse_string(d["formula"])
 			_:
 				assert(false)
 		return a
@@ -85,23 +83,21 @@ class Rule1:
 	
 	var number_of_regions : int = 1
 	
-	static func from_tree(tree : Array) -> Rule1:
+	static func from_json(d : Dictionary) -> Rule1:
 		var rule := Rule1.new()
 		var parser := Parser.new()
 		
-		assert(len(tree) == 3)
-		rule.region_formula = parser.parse(tree[0])
-		rule.region_size_formula = parser.parse(tree[1])
-		rule.region_action = Action.from_tree(tree[2])
+		rule.region_formula = parser.parse_string(d["region_formula"])
+		rule.region_size_formula = parser.parse_string(d["region_size_formula"])
+		if("region_action" in d):
+			rule.region_action = Action.from_json(d["region_action"])
+		else:
+			rule.region_action = Action.new()
 		return rule
 	
 	func set_bounds(bounds : Array[int]):
 		region_formula.set_bounds(bounds)
 		region_action.set_bounds(bounds)
-	
-	static func from_string(string : String) -> Rule1:
-		var parser := Parser.new()
-		return Rule1.from_tree(parser.make_tree_string(string))
 	
 	func applies_to_subregion(f : Formula, cells : int, found : Variables):
 		return f.generalizes(Formula.make_number(cells), false, found)
@@ -138,21 +134,28 @@ class Rule2:
 	
 	var number_of_regions : int = 2
 	
-	static func from_tree(tree : Array) -> Rule2:
+	static func from_json(d : Dictionary) -> Rule2:
 		var rule := Rule2.new()
 		var parser := Parser.new()
+		rule.region1_formula = parser.parse_string(d["region1_formula"])
+		rule.region2_formula = parser.parse_string(d["region2_formula"])
 		
-		assert(len(tree) == 8)
-		rule.region1_formula = parser.parse(tree[0])
-		rule.region2_formula = parser.parse(tree[1])
+		rule.region1_size_formula = parser.parse_string(d["region1_size_formula"])
+		rule.region1x2_size_formula = parser.parse_string(d["region1x2_size_formula"])
+		rule.region2_size_formula = parser.parse_string(d["region2_size_formula"])
 		
-		rule.region1_size_formula = parser.parse(tree[2])
-		rule.region1x2_size_formula = parser.parse(tree[3])
-		rule.region2_size_formula = parser.parse(tree[4])
-		
-		rule.region1_action = Action.from_tree(tree[5])
-		rule.region1x2_action = Action.from_tree(tree[6])
-		rule.region2_action = Action.from_tree(tree[7])
+		if("region1_action" in d):
+			rule.region1_action = Action.from_json(d["region1_action"])
+		else:
+			rule.region1_action = Action.new()
+		if("region1x2_action" in d):
+			rule.region1x2_action = Action.from_json(d["region1x2_action"])
+		else:
+			rule.region1x2_action = Action.new()
+		if("region2_action" in d):
+			rule.region2_action = Action.from_json(d["region2_action"])
+		else:
+			rule.region2_action = Action.new()
 		return rule
 	
 	func set_bounds(bounds : Array[int]):
@@ -161,10 +164,6 @@ class Rule2:
 		region2_formula.set_bounds(bounds)
 		region2_action.set_bounds(bounds)
 		region1x2_action.set_bounds(bounds)
-	
-	static func from_string(string : String) -> Rule2:
-		var parser := Parser.new()
-		return Rule2.from_tree(parser.make_tree_string(string))
 	
 	func applies_to_subregion(f : Formula, cells : int, found : Variables):
 		return f.generalizes(Formula.make_number(cells), false, found)
@@ -204,15 +203,10 @@ class Rule2:
 		region1x2_action.apply(solver, mine_grid, variables, r1.cells.filter(func (x) : return x in r2.cells), applicationid)
 
 class Rule:
-	static func from_string(s : String):
-		var parser := Parser.new()
-		var tree : Array = parser.make_tree_string(s)
-		assert(tree and tree[0].type == Parser.Tokens.Number)
-		if(tree[0].number == 1):
-			return Rule1.from_tree(tree.slice(1))
-		elif(tree[0].number == 2):
-			return Rule2.from_tree(tree.slice(1))
-		assert(false)
+	static func from_json(d : Dictionary):
+		match(int(d["size"])):
+			1: return Rule1.from_json(d)
+			2: return Rule2.from_json(d)
 
 var parser := Parser.new()
 var rules : Array = []
@@ -226,13 +220,13 @@ func _ready():
 	get_parent().get_parent().get_node("SpecialButton").pressed.connect(special_regions)
 
 func load_rules():
-	var rules_file := FileAccess.open("rules.txt", FileAccess.READ)
-	var line : String = rules_file.get_line()
-	while(not rules_file.eof_reached()):
-		if(len(line) > 0 and line[0] != "#"):
-			rules.append(Rule.from_string(line))
-			rules[-1].set_bounds(bounds)
-		line = rules_file.get_line()
+	var json := JSON.new()
+	var rules_file := FileAccess.open("rules.json", FileAccess.READ)
+	var error = json.parse(rules_file.get_as_text())
+	if error != OK:
+		print("JSON Parse Error: ", json.get_error_message(), " in rules.json at line ", json.get_error_line())
+	for i in json.data:
+		rules.append(Rule.from_json(i))
 
 func special_regions():
 	mine_grid.special_regions().map(new_region)

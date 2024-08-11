@@ -8,10 +8,6 @@ enum Tokens {
 	Slash,
 	Left_parenthesis,
 	Right_parenthesis,
-	None,
-	Bomb,
-	Clear,
-	Region,
 	End,
 }
 class Token:
@@ -112,14 +108,6 @@ func create_variable_token() -> Token:
 		next_char = get_char()
 	var t := Token.new()
 	match(s):
-		"none":
-			t.type = Tokens.None
-		"bomb":
-			t.type = Tokens.Bomb
-		"clear":
-			t.type = Tokens.Clear
-		"region":
-			t.type = Tokens.Region
 		"?":
 			t.type = Tokens.Variable
 			variables[s] = randi()

@@ -38,6 +38,7 @@ static var whitespace : Array[String] = [" ", "	", "\n", "\r"]
 static var letters : Array = range(26).map(func (x): return char("a".unicode_at(0)+x)) + ["?"]
 static var digits : Array = range(10).map(func (x): return char("0".unicode_at(0)+x))
 static var level : Dictionary = {
+	Tokens.Slash: [15, 15],
 	Tokens.Plus: [10, 10],
 	Tokens.Minus: [10, 5],
 }
@@ -57,6 +58,8 @@ func lex_next_token() -> Token:
 		return create_plus_token()
 	if(next_char == "-"):
 		return create_minus_token()
+	if(next_char == "/"):
+		return create_slash_token()
 	if(next_char == "(" or next_char == ")"):
 		return create_parenthesis_token()
 	if(next_char in letters):
@@ -79,6 +82,14 @@ func create_minus_token() -> Token:
 	next_char = get_char()
 	var t := Token.new()
 	t.type = Tokens.Minus
+	t.varnum = -1
+	return t
+
+func create_slash_token() -> Token:
+	assert(next_char == "/")
+	next_char = get_char()
+	var t := Token.new()
+	t.type = Tokens.Slash
 	t.varnum = -1
 	return t
 
@@ -215,6 +226,8 @@ func parse(tree : Array) -> Formula:
 					assert(level[j.type][0] <= level[i][0])
 				first_tree.append(j)
 			match(i):
+				Tokens.Slash:
+					return Formula.make_slash(parse(first_tree), parse(second_tree))
 				Tokens.Plus:
 					if(len(second_tree) == 0):
 						return Formula.make_gte(parse(first_tree))

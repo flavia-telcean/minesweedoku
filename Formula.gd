@@ -30,22 +30,20 @@ static func make_any() -> Formula:
 	x.varnum = -1
 	return x
 
+static func make_binary_operator(t : Type, a : Formula, b : Formula) -> Formula:
+	var x := Formula.new()
+	x.type = t
+	x.c1 = a
+	x.c2 = b
+	x.varnum = -1
+	x.variables = a.variables + b.variables
+	return x
 static func make_plus(a : Formula, b : Formula) -> Formula:
-	var x := Formula.new()
-	x.type = Type.Plus
-	x.c1 = a
-	x.c2 = b
-	x.varnum = -1
-	x.variables = a.variables + b.variables
-	return x
+	return make_binary_operator(Type.Plus, a, b)
 static func make_minus(a : Formula, b : Formula) -> Formula:
-	var x := Formula.new()
-	x.type = Type.Minus
-	x.c1 = a
-	x.c2 = b
-	x.varnum = -1
-	x.variables = a.variables + b.variables
-	return x
+	return make_binary_operator(Type.Minus, a, b)
+static func make_slash(a : Formula, b : Formula) -> Formula:
+	return make_binary_operator(Type.Slash, a, b)
 static func make_variable(id : int) -> Formula:
 	var x := Formula.new()
 	x.type = Type.Variable
@@ -157,8 +155,11 @@ func cleanup():
 	assertions()
 	match(type):
 		Type.Slash:
-			c1.cleanup()
-			c2.cleanup()
+			if(c1.is_unbounded()):
+				copy(c2)
+			elif(c2.is_unbounded()):
+				copy(c1)
+			cleanup()
 		Type.Gte:
 			inequality_cleanup()
 		Type.Lte:
@@ -357,37 +358,37 @@ func merge_without_conflicts(d1 : Dictionary, d2 : Dictionary) -> bool:
 func generalizes(other : Formula, rewriting : bool = false, found : Dictionary = {}) -> bool:
 	assertions()
 	other.assertions()
-	if(other.type == Type.Number):
+	if(not rewriting and other.type == Type.Number and len(variables) > 0):
 		var solution : Dictionary = solve_equation(other, found)
 		if(len(solution) > 0):
 			merge_without_conflicts(found, solution)
 			return true
-	if(type != Type.Variable and type != other.type):
-		return false
 	match(type):
 		Type.False: return false
 		Type.Any:
-			found[varnum] = randi()
+			found[varnum] = Formula.make_number(randi())
 			return rewriting
 		Type.Number:
+			if(other.type != Type.Number):
+				return false
 			return other.number == number
 		Type.Variable:
 			match(other.type):
 				Type.False: return true
 				Type.Any:
-					found[varnum] = randi()
+					found[varnum] = Formula.make_number(randi())
 					return rewriting
 				Type.Number:
 					if(varnum not in found):
-						found[varnum] = other.number
+						found[varnum] = other
 						return true
 					return false
 				Type.Variable:
 					if(not rewriting):
-						found[varnum] = other.varnum
+						found[varnum] = other
 						return varnum == other.varnum
 					if(varnum not in found):
-						found[varnum] = other.varnum
+						found[varnum] = other
 						return true
 					return found[varnum] == other.varnum
 					
@@ -396,10 +397,16 @@ func generalizes(other : Formula, rewriting : bool = false, found : Dictionary =
 				Type.Slash: return false
 				_: return false
 		Type.Plus:
+			if(other.type != Type.Plus):
+				return false
 			return c1.generalizes(other.c1, rewriting, found) and c2.generalizes(other.c2, rewriting, found)
 		Type.Minus:
+			if(other.type != Type.Minus):
+				return false
 			return c1.generalizes(other.c1, rewriting, found) and c2.generalizes(other.c2, rewriting, found)
 		Type.Slash:
+			if(other.type != Type.Slash):
+				return false
 			return c1.generalizes(other.c1, rewriting, found) and c2.generalizes(other.c2, rewriting, found)
 		_:
 			assert(false)

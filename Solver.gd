@@ -20,7 +20,7 @@ class Action:
 	var regionid : int
 	var bounds : Array[int]
 	
-	static func from_tree(tree : Array, regionids : Dictionary = {}) -> Action:
+	static func from_tree(tree : Array) -> Action:
 		assert(len(tree))
 		var a := Action.new()
 		match(tree[0].type):
@@ -40,7 +40,7 @@ class Action:
 				assert(false)
 		return a
 	
-	func apply(solver : Solver, mine_grid : MineGrid, variables : Dictionary, cells : Array[Cell], applicationid : int):
+	func apply(solver : Solver, mine_grid : MineGrid, variables : Variables, cells : Array[Cell], applicationid : int):
 		match(type):
 			Type.None: pass
 			Type.Bomb:
@@ -70,11 +70,11 @@ class Action:
 		if(self.regionformula):
 			self.regionformula.set_bounds(b)
 	
-	func is_unbounded(variables : Dictionary) -> bool:
+	func is_unbounded(variables : Variables) -> bool:
 		if(not regionformula):
 			return false
-		for v in variables:
-			if(v in regionformula.variables and variables[v] not in bounds):
+		for v in variables.variables:
+			if(v in regionformula.variables and variables.variables[v].number not in bounds):
 				return true
 		return false
 
@@ -103,22 +103,24 @@ class Rule1:
 		var parser := Parser.new()
 		return Rule1.from_tree(parser.make_tree_string(string))
 	
-	func applies_to_subregion(f : Formula, cells : int, found : Dictionary):
+	func applies_to_subregion(f : Formula, cells : int, found : Variables):
 		return f.generalizes(Formula.make_number(cells), false, found)
 	
-	func applies(r : Region) -> Dictionary:
-		var found : Dictionary = {}
+	func applies(r : Region) -> Variables:
+		var found := Variables.new()
 		var rg : bool = region_formula.generalizes(r.formula, true, found)
 		var rs : bool = applies_to_subregion(region_size_formula, r.count_cells(), found)
 		if(rg and rs):
-			if(found):
+			if(found.is_match()):
 				return found
-			return {-1: Formula.make_false()}
-		return {}
+			return Variables.new_match()
+		return Variables.new()
 	
 	func apply(solver : Solver, mine_grid : MineGrid, r : Region):
-		var variables : Dictionary = applies(r)
-		if(not variables):
+		var variables : Variables = applies(r)
+		if(region_action.is_unbounded(variables)):
+			return
+		if(not variables.is_match()):
 			return
 		region_action.apply(solver, mine_grid, variables, r.cells, randi())
 
@@ -164,11 +166,11 @@ class Rule2:
 		var parser := Parser.new()
 		return Rule2.from_tree(parser.make_tree_string(string))
 	
-	func applies_to_subregion(f : Formula, cells : int, found : Dictionary):
+	func applies_to_subregion(f : Formula, cells : int, found : Variables):
 		return f.generalizes(Formula.make_number(cells), false, found)
 	
-	func applies(r1 : Region, r2 : Region) -> Dictionary:
-		var found : Dictionary = {}
+	func applies(r1 : Region, r2 : Region) -> Variables:
+		var found := Variables.new()
 		var r1f : Formula = region1_formula.duplicate()
 		var r2f : Formula = region2_formula.duplicate()
 		var r1sf : Formula = region1_size_formula.duplicate()
@@ -185,16 +187,16 @@ class Rule2:
 		var r2s : bool = applies_to_subregion(r2sf, cells_in_2_not_in_1, found)
 		var r1x2s : bool = applies_to_subregion(r1x2sf, cells_intersection, found)
 		if(r1g and r1s and r2g and r2s and r1x2s):
-			if(found):
+			if(found.is_match()):
 				return found
-			return {-1 : Formula.make_false()}
-		return {}
+			return Variables.new_match()
+		return Variables.new()
 	
 	func apply(solver : Solver, mine_grid : MineGrid, r1 : Region, r2 : Region):
-		var variables : Dictionary = applies(r1, r2)
+		var variables : Variables = applies(r1, r2)
 		if(region1_action.is_unbounded(variables) or region2_action.is_unbounded(variables) or region1x2_action.is_unbounded(variables)):
 			return
-		if(not variables):
+		if(not variables.is_match()):
 			return
 		var applicationid : int = randi()
 		region1_action.apply(solver, mine_grid, variables, r1.cells.filter(func (x) : return x not in r2.cells), applicationid)

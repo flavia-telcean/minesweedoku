@@ -224,149 +224,90 @@ func equal(other : Formula) -> bool:
 	return number == other.number and varnum == other.varnum
 
 func replace_variables(dict : Dictionary):
+func replace_variables(vars : Variables):
 	assertions()
 	if(len(variables) == 0):
 		return
 	match(type):
 		Type.Variable:
-			if(varnum in dict):
-				copy(dict[varnum])
+			if(varnum in vars.variables):
+				copy(vars.variables[varnum])
 		Type.Plus:
-			c1.replace_variables(dict)
-			c2.replace_variables(dict)
+			c1.replace_variables(vars)
+			c2.replace_variables(vars)
 		Type.Minus:
-			c1.replace_variables(dict)
-			c2.replace_variables(dict)
+			c1.replace_variables(vars)
+			c2.replace_variables(vars)
 		Type.Slash:
-			c1.replace_variables(dict)
-			c2.replace_variables(dict)
+			c1.replace_variables(vars)
+			c2.replace_variables(vars)
 		Type.Gte:
-			c1.replace_variables(dict)
+			c1.replace_variables(vars)
 		Type.Lte:
-			c1.replace_variables(dict)
+			c1.replace_variables(vars)
 	cleanup()
 
-func solve_equation(other : Formula, dict : Dictionary = {}) -> Dictionary:
+func solve_equation(other : Formula, vars : Variables = Variables.new()) -> Variables:
 	cleanup()
 	other.cleanup()
 	match(type):
-		Type.False: return {}
+		Type.False: return Variables.new()
 		Type.Number:
 			if(other.type == Type.Number):
 				if(other.number == number):
-					return {-1: Formula.make_false()}
+					return Variables.new_match()
 				else:
-					return {}
+					return Variables.new()
 			return other.solve_equation(self)
 		Type.Variable:
-			if(not merge_without_conflicts(dict, {varnum: other})):
-				return {}
+			if(not vars.insert_without_conflicts(varnum, other)):
+				return Variables.new()
 			else:
-				other.replace_variables(dict)
-				dict[varnum] = other
+				other.replace_variables(vars)
+				vars.variables[varnum] = other
 		Type.Plus:
 			var added : bool = false
 			if(len(c1.variables) > 0):
-				var solution : Dictionary = c1.solve_equation(Formula.make_minus(other, c2), dict.duplicate())
-				if(solution and merge_without_conflicts(dict, solution)):
+				var solution : Variables = c1.solve_equation(Formula.make_minus(other, c2), vars.duplicate())
+				if(solution and vars.merge_without_conflicts(solution)):
 					added = true
 			if(len(c2.variables) > 0):
-				var solution : Dictionary = c2.solve_equation(Formula.make_minus(other, c1), dict.duplicate())
-				if(solution and merge_without_conflicts(dict, solution)):
+				var solution : Variables = c2.solve_equation(Formula.make_minus(other, c1), vars.duplicate())
+				if(solution and vars.merge_without_conflicts(solution)):
 					added = true
 			if(not added):
-				return {}
+				return Variables.new()
 		Type.Minus:
 			var added : bool = false
 			if(len(c1.variables) > 0):
-				var solution : Dictionary = c1.solve_equation(Formula.make_plus(other, c2), dict.duplicate())
-				if(solution and merge_without_conflicts(dict, solution)):
+				var solution : Variables = c1.solve_equation(Formula.make_plus(other, c2), vars.duplicate())
+				if(solution and vars.merge_without_conflicts(solution)):
 					added = true
 			if(len(c2.variables) > 0):
-				var solution : Dictionary = c2.solve_equation(Formula.make_minus(c1, other), dict.duplicate())
-				if(solution and merge_without_conflicts(dict, solution)):
+				var solution : Variables = c2.solve_equation(Formula.make_minus(c1, other), vars.duplicate())
+				if(solution and vars.merge_without_conflicts(solution)):
 					added = true
 			if(not added):
-				return {}
+				return Variables.new()
 		Type.Slash:
-			dict.merge(c1.solve_equation(other))
-			dict.merge(c1.solve_equation(other))
+			vars.merge(c1.solve_equation(other))
+			vars.merge(c1.solve_equation(other))
 		_:
 			assert(false)
-	return dict
+	return vars
 
-func is_solution(vars : Dictionary, other : Formula) -> bool:
-	match(type):
-		Type.False: return false
-		Type.Any: return true
-		Type.Number:
-			if(other.type == Type.Number):
-				return other.number == number
-			else:
-				return other.is_solution(vars, self)
-		Type.Variable: return other.is_solution(vars, vars[varnum])
-		Type.Plus:
-			var result : bool = false
-			var is_c1_constant : bool = len(c1.variables) == 0
-			var is_c2_constant : bool = len(c2.variables) == 0
-			if(not is_c1_constant):
-				result = result or c1.is_solution(vars, Formula.make_minus(other, c2))
-			if(not is_c2_constant):
-				result = result or c2.is_solution(vars, Formula.make_minus(other, c1))
-			if(is_c1_constant and is_c2_constant):
-				assert(false)
-			return result
-		Type.Minus:
-			var result : bool = false
-			var is_c1_constant : bool = len(c1.variables) == 0
-			var is_c2_constant : bool = len(c2.variables) == 0
-			if(not is_c1_constant):
-				result = result or c1.is_solution(vars, Formula.make_plus(other, c2))
-			if(not is_c2_constant):
-				result = result or c2.is_solution(vars, Formula.make_minus(c1, other))
-			return result
-		Type.Slash:
-			return is_solution(vars, c1) or is_solution(vars, c2)
-		Type.Gte:
-			assert(other.type == Type.Number)
-			match(c1.type):
-				Type.Number: return number >= other.number
-				Type.Plus:
-					var result : bool = false
-					var is_c1_constant : bool = len(c1.c1.variables) == 0
-					var is_c2_constant : bool = len(c1.c2variables) == 0
-					if(not is_c1_constant):
-						result = result or c1.c1.is_solution(vars, Formula.make_minus(other, c1.c2))
-					if(not is_c1_constant):
-						result = result or c1.c2.is_solution(vars, Formula.make_minus(other, c1.c1))
-					if(is_c1_constant and is_c2_constant):
-						assert(false)
-					return result
-				_:
-					assert(false)
-		_:
-			assert(false)
-	return false
-
-func merge_without_conflicts(d1 : Dictionary, d2 : Dictionary) -> bool:
-	for i in d2:
-		if(i in d1 and not d2[i].equal(d1[i])):
-			return false
-	d1.merge(d2)
-	return true
-
-func generalizes(other : Formula, rewriting : bool = false, found : Dictionary = {}) -> bool:
+func generalizes(other : Formula, rewriting : bool = false, found : Variables = Variables.new()) -> bool:
 	assertions()
 	other.assertions()
 	if(not rewriting and other.type == Type.Number and len(variables) > 0):
-		var solution : Dictionary = solve_equation(other, found)
-		if(len(solution) > 0):
-			merge_without_conflicts(found, solution)
+		var solution : Variables = solve_equation(other, found)
+		if(solution.is_match()):
+			found.merge_without_conflicts(solution)
 			return true
 	match(type):
 		Type.False: return false
 		Type.Any:
-			found[varnum] = Formula.make_number(randi())
+			found.insert_any_variable(varnum)
 			return rewriting
 		Type.Number:
 			if(other.type != Type.Number):
@@ -376,21 +317,21 @@ func generalizes(other : Formula, rewriting : bool = false, found : Dictionary =
 			match(other.type):
 				Type.False: return true
 				Type.Any:
-					found[varnum] = Formula.make_number(randi())
+					found.insert_any_variable(varnum)
 					return rewriting
 				Type.Number:
-					if(varnum not in found):
-						found[varnum] = other
+					if(varnum not in found.variables):
+						found.variables[varnum] = other
 						return true
-					return false
+					return found.variables[varnum].number == other.number
 				Type.Variable:
 					if(not rewriting):
-						found[varnum] = other
+						found.variables[varnum] = other
 						return varnum == other.varnum
-					if(varnum not in found):
-						found[varnum] = other
+					if(varnum not in found.variables):
+						found.variables[varnum] = other
 						return true
-					return found[varnum] == other.varnum
+					return found.variables[varnum].equal(other)
 					
 				Type.Plus: return false # XXX
 				Type.Minus: return false
@@ -425,34 +366,6 @@ func generalizes(other : Formula, rewriting : bool = false, found : Dictionary =
 		_:
 			assert(false)
 			return false
-
-func values_in(other : Formula) -> Dictionary:
-	assert(generalizes(other, false))
-	match(type):
-		Type.Any: return {}
-		Type.Number: return {}
-		Type.Variable:
-			match(other.type):
-				Type.Number:
-					return {varnum: other.number}
-				Type.Plus: assert(false) # XXX
-				Type.Minus: assert(false)
-				Type.Slash: assert(false)
-				_: return {}
-		Type.Plus:
-			var dict : Dictionary = c1.values_in(other.c1)
-			dict.merge(c2.values_in(other.c2))
-			return dict
-		Type.Minus:
-			var dict : Dictionary = c1.values_in(other.c1)
-			dict.merge(c2.values_in(other.c2))
-			return dict
-		Type.Slash:
-			var dict : Dictionary = c1.values_in(other.c1)
-			dict.merge(c2.values_in(other.c2))
-			return dict
-	assert(false)
-	return {}
 
 func duplicate() -> Formula:
 	var x := Formula.new()

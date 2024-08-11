@@ -17,6 +17,8 @@ var c2 : Formula
 var number : int
 var varnum : int
 var variables : Array[int]
+var bounds : Array[int]
+
 static func make_false() -> Formula:
 	var x := Formula.new()
 	x.type = Type.False
@@ -94,6 +96,8 @@ func assertions():
 			assert(varnum < 0)
 		Type.Number:
 			assert(varnum < 0)
+			if(bounds):
+				assert(number in bounds)
 		Type.False:
 			assert(number == 0)
 			assert(varnum < 0)
@@ -101,15 +105,16 @@ func assertions():
 			assert(number == 0)
 			assert(varnum < 0)
 
-func remove_mine():
-	assertions()
+func remove_mine(safe : bool = true):
+	if(safe):
+		assertions()
 	match(type):
 		Type.Variable:
 			var new := Formula.make_minus(Formula.make_variable(varnum), Formula.make_number(1))
 			copy(new)
 		Type.Slash:
-			c1.remove_mine()
-			c2.remove_mine()
+			c1.remove_mine(false)
+			c2.remove_mine(false)
 		Type.Gte:
 			c1.remove_mine()
 		Type.Lte:
@@ -118,7 +123,8 @@ func remove_mine():
 			c2.remove_mine()
 		Type.Number:
 			number -= 1
-	cleanup()
+	if(safe):
+		cleanup()
 func copy(other : Formula):
 	type = other.type
 	varnum = other.varnum
@@ -133,6 +139,8 @@ func copy(other : Formula):
 		c2.copy(other.c2)
 	else:
 		c2 = other.c2
+	if(other.bounds):
+		bounds = other.bounds
 	variables = other.variables.duplicate()
 func inequality_cleanup():
 	assert(type == Type.Lte or type == Type.Gte)
@@ -280,8 +288,8 @@ func solve_equation(other : Formula, dict : Dictionary = {}) -> Dictionary:
 			if(not added):
 				return {}
 		Type.Slash:
-			dict.merge(solve_equation(c1))
-			dict.merge(solve_equation(c2))
+			dict.merge(c1.solve_equation(other))
+			dict.merge(c1.solve_equation(other))
 		_:
 			assert(false)
 	return dict
@@ -457,3 +465,15 @@ func _to_string():
 			if(c1.type == Type.Number):
 				return c1._to_string() + "-"
 			return "(" + c1._to_string() + ")-"
+
+func set_bounds(b : Array[int]):
+	self.bounds = b
+	if(c1):
+		c1.set_bounds(b)
+	if(c2):
+		c1.set_bounds(b)
+	
+func is_unbounded():
+	if(type != Type.Number):
+		return false
+	return number not in bounds

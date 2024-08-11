@@ -3,6 +3,7 @@ class_name Solver
 
 var gm : BoardsFlow.GameMode
 var regions : Array[Region]
+var bounds : Array[int]
 
 var mine_grid : MineGrid
 
@@ -17,7 +18,7 @@ class Action:
 	var type : Type
 	var regionformula : Formula
 	var regionid : int
-	var bounds : Array = [0,1,2,3,4,5,6,7,8]
+	var bounds : Array[int]
 	
 	static func from_tree(tree : Array, regionids : Dictionary = {}) -> Action:
 		assert(len(tree))
@@ -65,6 +66,11 @@ class Action:
 				region.formula.replace_variables(variables)
 				solver.new_region(region)
 	
+	func set_bounds(b : Array[int]):
+		self.bounds = b
+		if(self.regionformula):
+			self.regionformula.set_bounds(b)
+	
 	func is_unbounded(variables : Dictionary) -> bool:
 		if(not regionformula):
 			return false
@@ -89,6 +95,10 @@ class Rule1:
 		rule.region_size_formula = parser.parse(tree[1])
 		rule.region_action = Action.from_tree(tree[2])
 		return rule
+	
+	func set_bounds(bounds : Array[int]):
+		region_formula.set_bounds(bounds)
+		region_action.set_bounds(bounds)
 	
 	static func from_string(string : String) -> Rule1:
 		var parser := Parser.new()
@@ -143,6 +153,13 @@ class Rule2:
 		rule.region1x2_action = Action.from_tree(tree[6])
 		rule.region2_action = Action.from_tree(tree[7])
 		return rule
+	
+	func set_bounds(bounds : Array[int]):
+		region1_formula.set_bounds(bounds)
+		region1_action.set_bounds(bounds)
+		region2_formula.set_bounds(bounds)
+		region2_action.set_bounds(bounds)
+		region1x2_action.set_bounds(bounds)
 	
 	static func from_string(string : String) -> Rule2:
 		var parser := Parser.new()
@@ -200,17 +217,21 @@ var parser := Parser.new()
 var rules : Array = []
 
 func _ready():
-	var rules_file := FileAccess.open("rules.txt", FileAccess.READ)
-	var line : String = rules_file.get_line()
-	while(not rules_file.eof_reached()):
-		if(len(line) > 0 and line[0] != "#"):
-			rules.append(Rule.from_string(line))
-		line = rules_file.get_line()
+	bounds.assign(range(mine_grid.max_neighbours + 1))
+	load_rules()
 	special_regions()
 	get_parent().get_parent().get_node("SolveButton").pressed.connect(_on_activate)
 	get_parent().get_parent().get_node("RemoveButton").pressed.connect(remove_regions)
 	get_parent().get_parent().get_node("SpecialButton").pressed.connect(special_regions)
 
+func load_rules():
+	var rules_file := FileAccess.open("rules.txt", FileAccess.READ)
+	var line : String = rules_file.get_line()
+	while(not rules_file.eof_reached()):
+		if(len(line) > 0 and line[0] != "#"):
+			rules.append(Rule.from_string(line))
+			rules[-1].set_bounds(bounds)
+		line = rules_file.get_line()
 
 func special_regions():
 	mine_grid.special_regions().map(new_region)

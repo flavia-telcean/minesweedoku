@@ -158,6 +158,10 @@ func region_at_cell(t : Tile, i : int) -> Region:
 		region.cells.append(tiles[x].cell))
 	region.id = i
 	region.formula = Formula.make_number(remaining)
+	var bounds : Array[int]
+	bounds.assign(range(max_neighbours + 1))
+	region.formula.set_bounds(bounds)
+			
 	return region
 
 func special_regions() -> Array[Region]:
@@ -165,8 +169,11 @@ func special_regions() -> Array[Region]:
 	tiles \
 		.filter(func (t): return not t.reveal and not t.is_known_mine()) \
 		.map(func (t): region_whole.cells.append(t.cell))
-	region_whole.id = -1
+	region_whole.id = randi()
 	region_whole.formula = Formula.make_number(mine_count() - flag_count())
+	var bounds : Array[int]
+	bounds.assign(range(mine_count() + 1))
+	region_whole.formula.set_bounds(bounds)
 	return [region_whole]
 
 func make_regions() -> Array[Region]:
@@ -174,6 +181,9 @@ func make_regions() -> Array[Region]:
 	for i in range(len(tiles)):
 		if(tiles[i].reveal and not tiles[i].is_known_mine()):
 			var region : Region = region_at_cell(tiles[i], i)
+			var bounds : Array[int]
+			bounds.assign(range(max_neighbours + 1))
+			region.formula.set_bounds(bounds)
 			if(len(region.cells)):
 				regions.append(region)
 	regions += special_regions()

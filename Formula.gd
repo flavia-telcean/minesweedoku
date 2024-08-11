@@ -123,16 +123,16 @@ func remove_mine(safe : bool = true):
 			number -= 1
 	if(safe):
 		cleanup()
-func copy(other : Formula):
+func copy(other : Formula, deep : bool = true):
 	type = other.type
 	varnum = other.varnum
 	number = other.number
-	if(other.c1):
+	if(other.c1 and deep):
 		c1 = Formula.new()
 		c1.copy(other.c1)
 	else:
 		c1 = other.c1
-	if(other.c2):
+	if(other.c2 and deep):
 		c2 = Formula.new()
 		c2.copy(other.c2)
 	else:
@@ -147,18 +147,18 @@ func inequality_cleanup():
 	c1.cleanup()
 	
 	if(c1.type == type):
-		c1.copy(c1.c1)
+		c1.copy(c1.c1, false)
 	elif(c1.type == Type.Gte or c1.type == Type.Lte):
-		copy(c1.c1)
+		copy(c1.c1, false)
 
 func cleanup():
 	assertions()
 	match(type):
 		Type.Slash:
 			if(c1.is_unbounded()):
-				copy(c2)
+				copy(c2, false)
 			elif(c2.is_unbounded()):
-				copy(c1)
+				copy(c1, false)
 			cleanup()
 		Type.Gte:
 			inequality_cleanup()
@@ -168,20 +168,20 @@ func cleanup():
 			c1.cleanup()
 			c2.cleanup()
 			if(c2.type == Type.Number and c2.number == 0):
-				copy(c1)
+				copy(c1, false)
 			elif(c2.type == Type.Number and c2.number < 0):
 				c2.number = -c2.number
 				type = Type.Minus
 			elif(c1.type == Type.Plus and c1.c2.type == Type.Number and c2.type == Type.Number):
 				c2.number += c1.c2.number
-				c1.copy(c1.c1)
+				c1.copy(c1.c1, false)
 			elif(c1.type == Type.Number and c2.type == Type.Number):
 				copy(Formula.make_number(c1.number + c2.number))
 			elif(c1.type == Type.Number):
 				var c3 := Formula.new()
-				c3.copy(c1)
-				c1.copy(c2)
-				c2.copy(c3)
+				c3.copy(c1, false)
+				c1.copy(c2, false)
+				c2.copy(c3, false)
 			else:
 				return
 			cleanup()
@@ -189,13 +189,13 @@ func cleanup():
 			c1.cleanup()
 			c2.cleanup()
 			if(c2.type == Type.Number and c2.number == 0):
-				copy(c1)
+				copy(c1, false)
 			elif(c2.type == Type.Number and c2.number < 0):
 				c2.number = -c2.number
 				type = Type.Plus
 			elif(c1.type == Type.Plus and c1.c2.type == Type.Number and c2.type == Type.Number):
 				c2.number -= c1.c2.number
-				c1.copy(c1.c1)
+				c1.copy(c1.c1, false)
 			elif(c1.type == Type.Number and c2.type == Type.Number):
 				copy(Formula.make_number(c1.number - c2.number))
 			else:

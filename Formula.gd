@@ -408,6 +408,20 @@ func generalizes(other : Formula, rewriting : bool = false, found : Dictionary =
 			if(other.type != Type.Slash):
 				return false
 			return c1.generalizes(other.c1, rewriting, found) and c2.generalizes(other.c2, rewriting, found)
+		Type.Gte:
+			if(other.type == Type.Gte):
+				return c1.generalizes(other.c1, rewriting, found)
+			if(other.type == Type.Number):
+				assert(c1.type == Type.Number)
+				return other.number >= c1.number
+			return false
+		Type.Lte:
+			if(other.type == Type.Lte):
+				return c1.generalizes(other.c1, rewriting, found)
+			if(other.type == Type.Number):
+				assert(c1.type == Type.Number)
+				return other.number <= c1.number
+			return false
 		_:
 			assert(false)
 			return false

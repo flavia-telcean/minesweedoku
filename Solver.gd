@@ -77,6 +77,8 @@ class Action:
 		return false
 
 class Rule1:
+	var name : String
+	
 	var region_formula : Formula
 	var region_size_formula : Formula
 	var region_action : Action
@@ -85,6 +87,8 @@ class Rule1:
 	
 	static func from_json(d : Dictionary) -> Rule1:
 		var rule := Rule1.new()
+		if("name" in d):
+			rule.name = d["name"]
 		var parser := Parser.new()
 		
 		rule.region_formula = parser.parse_string(d["region_formula"])
@@ -121,6 +125,8 @@ class Rule1:
 		region_action.apply(solver, mine_grid, variables, r.cells, randi())
 
 class Rule2:
+	var name : String
+	
 	var region1_formula : Formula
 	var region1_size_formula : Formula
 	var region1_action : Action = Action.new()
@@ -136,6 +142,8 @@ class Rule2:
 	
 	static func from_json(d : Dictionary) -> Rule2:
 		var rule := Rule2.new()
+		if("name" in d):
+			rule.name = d["name"]
 		var parser := Parser.new()
 		rule.region1_formula = parser.parse_string(d["region1_formula"])
 		rule.region2_formula = parser.parse_string(d["region2_formula"])

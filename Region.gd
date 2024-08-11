@@ -17,9 +17,9 @@ func add_cell(new_id : int, tile : Tile):
 	var cell := Cell.new(new_id)
 	cells.append(cell)
 
-func has_cell(id : int) -> bool:
+func has_cell(cid : int) -> bool:
 	for i in cells:
-		if(i.id == id):
+		if(i.id == cid):
 			return true
 	return false
 
@@ -46,9 +46,11 @@ func cell_ids() -> Array[int]:
 	return ids
 
 func create_line(mine_grid : MineGrid):
+	mine_grid.remove_line(id)
 	mine_grid.create_line(cell_ids(), id, str(formula))
 
 func remove_line(mine_grid : MineGrid):
+	cells.map(func (c): mine_grid.remove_point(c.id, self.id))
 	mine_grid.remove_line(id)
 
 func equal(other : Region) -> bool:

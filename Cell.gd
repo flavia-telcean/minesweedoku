@@ -1,7 +1,10 @@
 class_name Cell
 
 var id : int
-var next_subposition : int = 0
+var lines : Array[int] = []
+
+func next_subposition() -> int:
+	return len(lines)
 
 func _init(i : int):
 	id = i

@@ -139,13 +139,13 @@ func mine_count() -> int:
 	return self.mines
 
 func flag_count() -> int:
-	var count : int = 0;
+	var fcount : int = 0;
 	for t in self.tiles:
 		if(t.reveal and t.mine):
-			count += 1
+			fcount += 1
 		if(t.flag):
-			count += 1
-	return count
+			fcount += 1
+	return fcount
 
 func region_at_cell(t : Tile, i : int) -> Region:
 	if(not t.reveal or t.is_known_mine()):
@@ -238,13 +238,13 @@ func get_position_id(i : int, ri : int) -> int:
 func get_point_position(id : int, region_id : int) -> Vector2:
 	var position_id : int = get_position_id(id, region_id)
 	if(position_id not in cell_positions):
-		tiles[id].cell.next_subposition += 1
-		cell_positions[position_id] =  get_tile_position(tiles[id]) + get_tile_subposition(tiles[id], tiles[id].cell.next_subposition)
+		cell_positions[position_id] =  get_tile_position(tiles[id]) + get_tile_subposition(tiles[id], tiles[id].cell.next_subposition())
 	return cell_positions[position_id]
 
 func create_line(cells : Array[int], id : int, label : String):
 	if(len(cells) > 12):
 		return
+	cells.map(func(x): tiles[x].cell.lines.append(id))
 	var positions : Array[Vector2] = []
 	positions.assign(cells.map(func(x): return get_point_position(x, id)))
 	var line := Line2D.new()
@@ -259,18 +259,18 @@ func create_line(cells : Array[int], id : int, label : String):
 	lines.append(line)
 
 func remove_line(id : int):
-	lines = lines.filter(func(line):
+	lines.assign(lines.filter(func(line):
 		if(line.get_name().to_int() == id):
-			get_parent().remove_child(line)
 			line.queue_free()
-		return line.get_name().to_int() != id)
+			get_parent().remove_child(line)
+		return line.get_name().to_int() != id))
 
 func remove_point(id : int, region : int, new_label : String = ""):
 	if(get_position_id(id, region) not in cell_positions):
 		print("Attempt to remove point that doesn't exist: ", id, " of ", region)
 		return
 	for i in lines:
-		tiles[id].cell.next_subposition -= 1
+		tiles[id].cell.lines.erase(region)
 		var point_position : Vector2 = cell_positions[get_position_id(id, region)]
 		if(point_position not in i.points):
 			continue

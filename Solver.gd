@@ -33,9 +33,7 @@ class Action:
 			Parser.Tokens.Region:
 				a.type = Type.NewRegion
 				assert(len(tree) == 3 and tree[1].type == Parser.Tokens.Number)
-				if(tree[1].number not in regionids):
-					regionids[tree[1].number] = randi()
-				a.regionid = regionids[tree[1].number]
+				a.regionid = tree[1].number
 				var parser := Parser.new()
 				a.regionformula = parser.parse(tree[2])
 			_:
@@ -58,6 +56,7 @@ class Action:
 				assert(len(found_regions) <= 1)
 				if(len(found_regions) == 1):
 					found_regions[0].cells += cells
+					solver.update_region(found_regions[0])
 					return
 				var region := Region.new()
 				region.cells = cells.duplicate()
@@ -121,7 +120,7 @@ class Rule1:
 		var variables : Dictionary = applies(r)
 		if(not variables):
 			return
-		region_action.apply(solver, mine_grid, variables, r.cells)
+		region_action.apply(solver, mine_grid, variables, r.cells, randi())
 
 class Rule2:
 	var region1_formula : Formula
@@ -240,6 +239,9 @@ func new_region(region : Region):
 	regions.append(region)
 	region.create_line(mine_grid)
 
+func update_region(region : Region):
+	region.create_line(mine_grid)
+
 func new_region_at_cell(i : int):
 	var region : Region = mine_grid.indexize(mine_grid.region_at_cell, i)
 	if(region):
@@ -259,7 +261,10 @@ func _remove_mine(i : int):
 			r.remove_mine(mine_grid, i)
 
 func remove_empty_regions():
-	regions = regions.filter(func(r): return len(r.cells) > 0)
+	regions = regions.filter(func(r):
+		if(not len(r.cells)):
+			r.remove_line(mine_grid)
+		return len(r.cells) > 0)
 
 func remove_duplicate_regions():
 	var to_be_removed : Array[int] = []
@@ -268,7 +273,7 @@ func remove_duplicate_regions():
 			if(regions[i].equal(regions[j])):
 				regions[j].remove_line(mine_grid)
 				to_be_removed.append(regions[j].id)
-	regions = regions.filter(func(r): return r.id not in to_be_removed)
+	regions.assign(regions.filter(func(r): return r.id not in to_be_removed))
 
 func step():
 	var old_regions : Array[Region] = regions.duplicate()

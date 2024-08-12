@@ -107,6 +107,7 @@ func create_variable_token() -> Token:
 		s += next_char
 		next_char = get_char()
 	var t := Token.new()
+	t.name = s
 	match(s):
 		"?":
 			t.type = Tokens.Variable
@@ -188,7 +189,7 @@ func parse(tree : Array) -> Formula:
 		else:
 			element.assertions()
 			match(element.type):
-				Tokens.Variable: return Formula.make_variable(element.varnum)
+				Tokens.Variable: return Formula.make_variable(element.varnum, element.name)
 				Tokens.Number: return Formula.make_number(element.number)
 				_: assert(false);
 	for i in level:

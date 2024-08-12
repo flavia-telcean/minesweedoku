@@ -16,6 +16,7 @@ var c1 : Formula
 var c2 : Formula
 var number : int
 var varnum : int
+var name : String
 var variables : Array[int]
 var bounds : Array[int]
 
@@ -44,10 +45,14 @@ static func make_minus(a : Formula, b : Formula) -> Formula:
 	return make_binary_operator(Type.Minus, a, b)
 static func make_slash(a : Formula, b : Formula) -> Formula:
 	return make_binary_operator(Type.Slash, a, b)
-static func make_variable(id : int) -> Formula:
+static func make_variable(id : int, Name : String = "") -> Formula:
 	var x := Formula.new()
 	x.type = Type.Variable
 	x.varnum = id
+	if(Name):
+		x.name = Name
+	else:
+		x.name = "#" + str(id % 10)
 	x.variables = [id]
 	x.number = 0
 	return x
@@ -123,9 +128,11 @@ func remove_mine(safe : bool = true):
 			number -= 1
 	if(safe):
 		cleanup()
+
 func copy(other : Formula, deep : bool = true):
 	type = other.type
 	varnum = other.varnum
+	name = other.name
 	number = other.number
 	if(other.c1 and deep):
 		c1 = Formula.new()
@@ -378,7 +385,7 @@ func _to_string():
 		Type.Number:
 			return str(number)
 		Type.Variable:
-			return "#" + str(varnum % 10)
+			return name
 		Type.False:
 			return "!"
 		Type.Any:

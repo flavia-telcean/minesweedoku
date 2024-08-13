@@ -6,6 +6,9 @@ enum Type {
 	Bomb,
 	Clear,
 	NewRegion,
+	Show,
+	Hide,
+	Trash,
 }
 
 var type : Type
@@ -17,22 +20,14 @@ var name : String
 
 static func from_json(d : Dictionary) -> Action:
 	var a := Action.new()
-	match(d["type"]):
-		"None":
-			a.type = Type.None
-		"Bomb":
-			a.type = Type.Bomb
-		"Clear":
-			a.type = Type.Clear
-		"NewRegion":
-			a.type = Type.NewRegion
-			a.regionid = d["id"]
-			var parser := Parser.new()
-			a.regionformula = parser.parse_string(d["formula"])
-			if("hidden" in d):
-				a.regionhidden = d["hidden"]
-		_:
-			assert(false)
+	a.type = Type[d["type"]]
+	assert(a.type != null)
+	if(a.type == Type.NewRegion):
+		a.regionid = d["id"]
+		var parser := Parser.new()
+		a.regionformula = parser.parse_string(d["formula"])
+		if("hidden" in d):
+			a.regionhidden = d["hidden"]
 	return a
 
 
@@ -47,7 +42,7 @@ func to_json() -> Dictionary:
 			x["hidden"] = true
 	return x
 
-func apply(solver : Solver, mine_grid : MineGrid, variables : Variables, cells : Array[Cell], applicationid : int):
+func apply(solver : Solver, mine_grid : MineGrid, variables : Variables, cells : Array[Cell], applicationid : int, original_region : Region = null):
 	match(type):
 		Type.None: pass
 		Type.Bomb:
@@ -72,6 +67,17 @@ func apply(solver : Solver, mine_grid : MineGrid, variables : Variables, cells :
 			region.formula = regionformula.duplicate()
 			region.formula.replace_variables(variables)
 			solver.new_region(region)
+		Type.Show:
+			assert(original_region)
+			original_region.hidden = false
+			original_region.create_line(mine_grid)
+		Type.Hide:
+			assert(original_region)
+			original_region.hidden = true
+			original_region.remove_line(mine_grid)
+		Type.Trash:
+			assert(original_region)
+			assert(!"TODO")
 
 func set_bounds(b : Array[int]):
 	self.bounds = b

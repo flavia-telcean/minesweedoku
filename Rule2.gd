@@ -89,8 +89,8 @@ func apply(solver : Solver, mine_grid : MineGrid, r1 : Region, r2 : Region):
 	if(not variables.is_match()):
 		return
 	var applicationid : int = randi()
-	region1_action.apply(solver, mine_grid, variables, r1.cells.filter(func (x) : return x not in r2.cells), applicationid)
-	region2_action.apply(solver, mine_grid, variables, r2.cells.filter(func (x) : return x not in r1.cells), applicationid)
+	region1_action.apply(solver, mine_grid, variables, r1.cells.filter(func (x) : return x not in r2.cells), applicationid, r1)
+	region2_action.apply(solver, mine_grid, variables, r2.cells.filter(func (x) : return x not in r1.cells), applicationid, r2)
 	region1x2_action.apply(solver, mine_grid, variables, r1.cells.filter(func (x) : return x in r2.cells), applicationid)
 
 func _get_formulas() -> Dictionary:

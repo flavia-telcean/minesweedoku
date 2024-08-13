@@ -48,7 +48,7 @@ func apply(solver : Solver, mine_grid : MineGrid, r : Region):
 		return
 	if(not variables.is_match()):
 		return
-	region_action.apply(solver, mine_grid, variables, r.cells, randi())
+	region_action.apply(solver, mine_grid, variables, r.cells, randi(), r)
 
 func _get_formulas() -> Dictionary:
 	return {

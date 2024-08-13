@@ -15,6 +15,7 @@ enum Tokens {
 class Token:
 	var type : Tokens
 	var varnum : int
+	var name : String
 	var number : int
 	func assertions():
 		if(type == Tokens.Variable):

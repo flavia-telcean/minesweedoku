@@ -19,6 +19,7 @@ var c2 : Formula
 var number : int
 var varnum : int
 var name : String
+var description : String
 var variables : Array[int]
 var bounds : Array[int]
 
@@ -475,3 +476,21 @@ func is_unbounded():
 	if(type != Type.Number):
 		return false
 	return number not in bounds
+
+func on_edited(item : TreeItem):
+	var p := Parser.new()
+	var f = p.parse_string(item.get_text(1))
+	copy(f)
+
+func create_menu(parent : TreeItem):
+	var tree = parent.get_tree()
+	var formula_item = tree.create_item(parent)
+	if(description):
+		formula_item.set_text(0, description)
+	elif(name):
+		formula_item.set_text(0, name)
+	else:
+		formula_item.set_text(0, "Formula")
+	formula_item.set_text(1, str(self))
+	formula_item.set_metadata(1, self)
+	formula_item.set_editable(1, true)

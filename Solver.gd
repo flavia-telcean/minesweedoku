@@ -22,6 +22,8 @@ func _ready():
 	get_node("/root/Control").find_child("SolveButton").pressed.connect(_on_activate)
 	get_node("/root/Control").find_child("RemoveButton").pressed.connect(remove_regions)
 	get_node("/root/Control").find_child("SpecialButton").pressed.connect(special_regions)
+	get_node("/root/Control").find_child("SaveButton").pressed.connect(save_rules)
+
 
 func add_rule(rule):
 	rule.set_bounds(mine_grid.get_bounds())
@@ -37,6 +39,12 @@ func load_rules():
 		print("JSON Parse Error: ", json.get_error_message(), " in rules.json at line ", json.get_error_line())
 	for i in json.data:
 		add_rule(Rule.from_json(i))
+
+func save_rules():
+	var json := JSON.new()
+	var rules_file := FileAccess.open("rules.json", FileAccess.WRITE)
+	rules_file.store_string(json.stringify(rules.map(func (r): return r.to_json()), "\t"))
+	rules_file.close()
 
 func special_regions():
 	mine_grid.special_regions().map(new_region)

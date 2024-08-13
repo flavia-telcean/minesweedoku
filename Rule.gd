@@ -14,6 +14,19 @@ static func from_json(d : Dictionary):
 		1: return Rule1.from_json(d)
 		2: return Rule2.from_json(d)
 
+func to_json() -> Dictionary:
+	var formulas : Dictionary = get_all_formulas()
+	var actions : Dictionary = get_actions.call()
+	var x : Dictionary = {
+		"size": number_of_regions,
+		"name": name,
+	}
+	for i in formulas:
+		x[i] = str(formulas[i])
+	for i in actions:
+		x[i] = actions[i].to_json()
+	return x
+
 func get_all_formulas() -> Dictionary:
 	var x : Dictionary = {}
 	x.merge(get_formulas.call())

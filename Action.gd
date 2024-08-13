@@ -17,13 +17,13 @@ var name : String
 static func from_json(d : Dictionary) -> Action:
 	var a := Action.new()
 	match(d["type"]):
-		"none":
+		"None":
 			a.type = Type.None
-		"bomb":
+		"Bomb":
 			a.type = Type.Bomb
-		"clear":
+		"Clear":
 			a.type = Type.Clear
-		"region":
+		"NewRegion":
 			a.type = Type.NewRegion
 			a.regionid = d["id"]
 			var parser := Parser.new()
@@ -31,6 +31,16 @@ static func from_json(d : Dictionary) -> Action:
 		_:
 			assert(false)
 	return a
+
+
+func to_json() -> Dictionary:
+	var x = {
+		"type": Type.keys()[type],
+	}
+	if(type == Type.NewRegion):
+		x["id"] = regionid
+		x["formula"] = str(regionformula)
+	return x
 
 func apply(solver : Solver, mine_grid : MineGrid, variables : Variables, cells : Array[Cell], applicationid : int):
 	match(type):

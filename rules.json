@@ -1,100 +1,182 @@
 [
 	{
-		"size": 2,
+		"name": "",
+		"region1_action": {
+			"formula": "1",
+			"id": 1,
+			"type": "NewRegion"
+		},
 		"region1_formula": "2",
+		"region1_size_formula": "?",
+		"region1x2_action": {
+			"type": "None"
+		},
+		"region1x2_size_formula": "?",
+		"region2_action": {
+			"type": "None"
+		},
 		"region2_formula": "1",
-		"region1_size_formula": "?",
-		"region1x2_size_formula": "?",
 		"region2_size_formula": "0",
-		"region1_action": {"type": "region", "id": 1, "formula": "1"}
+		"size": 2
 	},
 	{
-		"size": 2,
+		"name": "",
+		"region1_action": {
+			"formula": "1-",
+			"id": 1,
+			"type": "NewRegion"
+		},
 		"region1_formula": "2",
-		"region2_formula": "2",
 		"region1_size_formula": "?",
+		"region1x2_action": {
+			"type": "None"
+		},
 		"region1x2_size_formula": "?",
+		"region2_action": {
+			"type": "None"
+		},
+		"region2_formula": "2",
 		"region2_size_formula": "1",
-		"region1_action": {"type": "region", "id": 1, "formula": "1-"}
+		"size": 2
 	},
 	{
-		"size": 2,
+		"name": "",
+		"region1_action": {
+			"formula": "(y)+",
+			"id": 1,
+			"type": "NewRegion"
+		},
 		"region1_formula": "x",
-		"region2_formula": "x+y",
 		"region1_size_formula": "?",
+		"region1x2_action": {
+			"type": "None"
+		},
 		"region1x2_size_formula": "?",
+		"region2_action": {
+			"type": "None"
+		},
+		"region2_formula": "x + y",
 		"region2_size_formula": "?",
-		"region1_action": {"type": "region", "id": 1, "formula": "y+"}
+		"size": 2
 	},
 	{
 		"name": "Additional mines in outside region",
-		"size": 2,
+		"region1_action": {
+			"type": "None"
+		},
 		"region1_formula": "x",
-		"region2_formula": "x++y",
 		"region1_size_formula": "0",
+		"region1x2_action": {
+			"type": "None"
+		},
 		"region1x2_size_formula": "?",
+		"region2_action": {
+			"formula": "(y)+",
+			"id": 1,
+			"type": "NewRegion"
+		},
+		"region2_formula": "x ++ y",
 		"region2_size_formula": "?",
-		"region2_action": {"type": "region", "id": 1, "formula": "y+"},
+		"size": 2
 	},
 	{
-		"size": 2,
+		"name": "Clear cells outside included region",
+		"region1_action": {
+			"type": "None"
+		},
 		"region1_formula": "x",
+		"region1_size_formula": "0",
+		"region1x2_action": {
+			"type": "None"
+		},
+		"region1x2_size_formula": "?",
+		"region2_action": {
+			"type": "Clear"
+		},
 		"region2_formula": "x",
-		"region1_size_formula": "0",
-		"region1x2_size_formula": "?",
 		"region2_size_formula": "?",
-		"region2_action": {"type": "clear"},
+		"size": 2
 	},
 	{
-		"size": 2,
+		"name": "Even parity chain of two ones",
+		"region1_action": {
+			"formula": "0 / 2",
+			"id": 1,
+			"type": "NewRegion"
+		},
 		"region1_formula": "1",
-		"region2_formula": "1",
 		"region1_size_formula": "?",
+		"region1x2_action": {
+			"type": "None"
+		},
 		"region1x2_size_formula": "1+",
+		"region2_action": {
+			"formula": "0 / 2",
+			"id": 1,
+			"type": "NewRegion"
+		},
+		"region2_formula": "1",
 		"region2_size_formula": "?",
-		"region1_action": {"type": "region", "id": 1, "formula": "0/2"},
-		"region2_action": {"type": "region", "id": 1, "formula": "0/2"},
+		"size": 2
 	},
 	{
 		"name": "All bombs",
-		"size": 1,
+		"region_action": {
+			"type": "Bomb"
+		},
 		"region_formula": "x",
 		"region_size_formula": "x",
-		"region_action": {"type": "bomb"},
+		"size": 1
 	},
 	{
 		"name": "Clear",
-		"size": 1,
+		"region_action": {
+			"type": "Clear"
+		},
 		"region_formula": "0",
 		"region_size_formula": "?",
-		"region_action": {"type": "clear"},
+		"size": 1
 	},
 	{
 		"name": "Clear with Lte",
-		"size": 1,
+		"region_action": {
+			"type": "Clear"
+		},
 		"region_formula": "0-",
 		"region_size_formula": "?",
-		"region_action": {"type": "clear"},
+		"size": 1
 	},
 	{
 		"name": "Weaken into Gte",
-		"size": 1,
+		"region_action": {
+			"formula": "(x)+",
+			"id": 1,
+			"type": "NewRegion"
+		},
 		"region_formula": "x",
 		"region_size_formula": "?",
-		"region_action": {"type": "region", "id": 1, "formula": "x+"},
+		"size": 1
 	},
 	{
 		"name": "Weaken into Lte",
-		"size": 1,
+		"region_action": {
+			"formula": "(x)-",
+			"id": 1,
+			"type": "NewRegion"
+		},
 		"region_formula": "x",
 		"region_size_formula": "?",
-		"region_action": {"type": "region", "id": 1, "formula": "x-"},
+		"size": 1
 	},
 	{
 		"name": "Slash lower bound",
-		"size": 1,
-		"region_formula": "x / x + 2",
+		"region_action": {
+			"formula": "x",
+			"id": 1,
+			"type": "NewRegion"
+		},
+		"region_formula": "(x) / (x + 2)",
 		"region_size_formula": "x + 1",
-		"region_action": {"type": "region", "id": 1, "formula": "x"},
-	},
+		"size": 1
+	}
 ]

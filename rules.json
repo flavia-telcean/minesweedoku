@@ -27,19 +27,10 @@
 		"region1_action": {"type": "region", "id": 1, "formula": "y+"}
 	},
 	{
+		"name": "Additional mines in outside region",
 		"size": 2,
 		"region1_formula": "x",
-		"region2_formula": "x+y",
-		"region1_size_formula": "?",
-		"region1x2_size_formula": "?",
-		"region2_size_formula": "x",
-		"region1_action": {"type": "clear"},
-		"region2_action": {"type": "bomb"},
-	},
-	{
-		"size": 2,
-		"region1_formula": "x",
-		"region2_formula": "x+y",
+		"region2_formula": "x++y",
 		"region1_size_formula": "0",
 		"region1x2_size_formula": "?",
 		"region2_size_formula": "?",

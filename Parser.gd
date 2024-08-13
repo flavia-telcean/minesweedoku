@@ -2,7 +2,9 @@ class_name Parser
 
 enum Tokens {
 	Plus,
+	PlusPlus,
 	Minus,
+	MinusMinus,
 	Variable,
 	Number,
 	Slash,
@@ -35,6 +37,8 @@ static var letters : Array = range(26).map(func (x): return char("a".unicode_at(
 static var digits : Array = range(10).map(func (x): return char("0".unicode_at(0)+x))
 static var level : Dictionary = {
 	Tokens.Slash: [15, 15],
+	Tokens.PlusPlus: [11, 11],
+	Tokens.MinusMinus: [11, 5],
 	Tokens.Plus: [10, 10],
 	Tokens.Minus: [10, 5],
 }
@@ -65,11 +69,22 @@ func lex_next_token() -> Token:
 	assert(false)
 	return Token.new()
 
+func create_token(type : Tokens) -> Token:
+	next_char = get_char()
+	var t := Token.new()
+	t.type = type
+	t.varnum = -1
+	return t
+
 func create_plus_token() -> Token:
 	assert(next_char == "+")
 	next_char = get_char()
 	var t := Token.new()
-	t.type = Tokens.Plus
+	if(next_char == "+"):
+		t.type = Tokens.PlusPlus
+		next_char = get_char()
+	else:
+		t.type = Tokens.Plus
 	t.varnum = -1
 	return t
 
@@ -77,17 +92,18 @@ func create_minus_token() -> Token:
 	assert(next_char == "-")
 	next_char = get_char()
 	var t := Token.new()
-	t.type = Tokens.Minus
+	if(next_char == "-"):
+		t.type = Tokens.MinusMinus
+		next_char = get_char()
+	else:
+		t.type = Tokens.Minus
 	t.varnum = -1
 	return t
 
+
 func create_slash_token() -> Token:
 	assert(next_char == "/")
-	next_char = get_char()
-	var t := Token.new()
-	t.type = Tokens.Slash
-	t.varnum = -1
-	return t
+	return create_token(Tokens.Slash)
 
 func create_parenthesis_token() -> Token:
 	var t := Token.new()
@@ -225,6 +241,10 @@ func parse(tree : Array) -> Formula:
 					if(len(second_tree) == 0):
 						return Formula.make_lte(parse(first_tree))
 					return Formula.make_minus(parse(first_tree), parse(second_tree))
+				Tokens.PlusPlus:
+					return Formula.make_plusplus(parse(first_tree), parse(second_tree))
+				Tokens.MinusMinus:
+					return Formula.make_minusminus(parse(first_tree), parse(second_tree))
 				_: assert(false)
 			
 	return Formula.make_false()

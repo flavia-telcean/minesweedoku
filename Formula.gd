@@ -6,7 +6,9 @@ enum Type {
 	Gte,
 	Lte,
 	Plus,
+	PlusPlus,
 	Minus,
+	MinusMinus,
 	Number,
 	False,
 	Any,
@@ -41,8 +43,12 @@ static func make_binary_operator(t : Type, a : Formula, b : Formula) -> Formula:
 	return x
 static func make_plus(a : Formula, b : Formula) -> Formula:
 	return make_binary_operator(Type.Plus, a, b)
+static func make_plusplus(a : Formula, b : Formula) -> Formula:
+	return make_binary_operator(Type.PlusPlus, a, b)
 static func make_minus(a : Formula, b : Formula) -> Formula:
 	return make_binary_operator(Type.Minus, a, b)
+static func make_minusminus(a : Formula, b : Formula) -> Formula:
+	return make_binary_operator(Type.MinusMinus, a, b)
 static func make_slash(a : Formula, b : Formula) -> Formula:
 	return make_binary_operator(Type.Slash, a, b)
 static func make_variable(id : int, Name : String = "") -> Formula:
@@ -76,7 +82,7 @@ static func make_gte(f : Formula) -> Formula:
 static func make_lte(f : Formula) -> Formula:
 	return make_unary_operator(f, Type.Lte)
 
-func assertions():
+func assertions(safe : bool = true):
 	match(type):
 		Type.Variable:
 			assert(varnum >= 0)
@@ -97,9 +103,21 @@ func assertions():
 			assert(number == 0)
 			assert(c1 and c2)
 			assert(varnum < 0)
+		Type.PlusPlus:
+			assert(number == 0)
+			assert(c1 and c2)
+			assert(varnum < 0)
+		Type.Minus:
+			assert(number == 0)
+			assert(c1 and c2)
+			assert(varnum < 0)
+		Type.MinusMinus:
+			assert(number == 0)
+			assert(c1 and c2)
+			assert(varnum < 0)
 		Type.Number:
 			assert(varnum < 0)
-			if(bounds):
+			if(safe and bounds):
 				assert(number in bounds)
 		Type.False:
 			assert(number == 0)
@@ -109,8 +127,7 @@ func assertions():
 			assert(varnum < 0)
 
 func remove_mine(safe : bool = true):
-	if(safe):
-		assertions()
+	assertions(safe)
 	match(type):
 		Type.Variable:
 			var new := Formula.make_minus(Formula.make_variable(varnum), Formula.make_number(1))
@@ -124,10 +141,15 @@ func remove_mine(safe : bool = true):
 			c1.remove_mine()
 		Type.Plus:
 			c2.remove_mine()
+		Type.PlusPlus:
+			c2.remove_mine()
+		Type.Minus:
+			c1.remove_mine()
+		Type.MinusMinus:
+			c1.remove_mine()
 		Type.Number:
 			number -= 1
-	if(safe):
-		cleanup()
+	cleanup(safe)
 
 func copy(other : Formula, deep : bool = true):
 	type = other.type
@@ -158,22 +180,23 @@ func inequality_cleanup():
 	elif(c1.type == Type.Gte or c1.type == Type.Lte):
 		copy(c1.c1, false)
 
-func cleanup():
-	assertions()
+func cleanup(safe : bool = true):
+	assertions(safe)
 	match(type):
 		Type.Slash:
 			if(c1.is_unbounded()):
 				copy(c2, false)
+				cleanup(safe)
 			elif(c2.is_unbounded()):
 				copy(c1, false)
-			cleanup()
+				cleanup(safe)
 		Type.Gte:
 			inequality_cleanup()
 		Type.Lte:
 			inequality_cleanup()
 		Type.Plus:
-			c1.cleanup()
-			c2.cleanup()
+			c1.cleanup(safe)
+			c2.cleanup(safe)
 			if(c2.type == Type.Number and c2.number == 0):
 				copy(c1, false)
 			elif(c2.type == Type.Number and c2.number < 0):
@@ -191,10 +214,10 @@ func cleanup():
 				c2.copy(c3, false)
 			else:
 				return
-			cleanup()
+			cleanup(safe)
 		Type.Minus:
-			c1.cleanup()
-			c2.cleanup()
+			c1.cleanup(safe)
+			c2.cleanup(safe)
 			if(c2.type == Type.Number and c2.number == 0):
 				copy(c1, false)
 			elif(c2.type == Type.Number and c2.number < 0):
@@ -207,19 +230,7 @@ func cleanup():
 				copy(Formula.make_number(c1.number - c2.number))
 			else:
 				return
-			cleanup()
-
-func try_solving_for_variable(varid : int) -> Formula:
-	return Formula.new()
-	#match(type):
-	#	Type.False: return {}
-	#	Type.Number:
-	#	Type.Variable:
-	#	Type.Plus:
-	#	Type.Minus:
-	#	Type.Slash:
-	#	_:
-	#		print("TODO :211")
+			cleanup(safe)
 
 func equal(other : Formula) -> bool:
 	if(type != other.type):
@@ -230,33 +241,72 @@ func equal(other : Formula) -> bool:
 		return false
 	return number == other.number and varnum == other.varnum
 
-func replace_variables(dict : Dictionary):
+func for_each_child(f : Callable):
+	match(type):
+		Type.Plus:
+			f.call(c1)
+			f.call(c2)
+		Type.PlusPlus:
+			f.call(c1)
+			f.call(c2)
+		Type.Minus:
+			f.call(c1)
+			f.call(c2)
+		Type.MinusMinus:
+			f.call(c1)
+			f.call(c2)
+		Type.Slash:
+			f.call(c1)
+			f.call(c2)
+		Type.Gte:
+			f.call(c1)
+		Type.Lte:
+			f.call(c1)
+
 func replace_variables(vars : Variables):
-	assertions()
+	assertions(false)
 	if(len(variables) == 0):
 		return
-	match(type):
-		Type.Variable:
-			if(varnum in vars.variables):
-				copy(vars.variables[varnum])
-		Type.Plus:
-			c1.replace_variables(vars)
-			c2.replace_variables(vars)
-		Type.Minus:
-			c1.replace_variables(vars)
-			c2.replace_variables(vars)
-		Type.Slash:
-			c1.replace_variables(vars)
-			c2.replace_variables(vars)
-		Type.Gte:
-			c1.replace_variables(vars)
-		Type.Lte:
-			c1.replace_variables(vars)
-	cleanup()
+	for_each_child(func (c): c.replace_variables(vars))
+	if(type == Type.Variable and varnum in vars.variables):
+		copy(vars.variables[varnum], true)
+	cleanup(false)
+
+func solve_plus(other : Formula, vars : Variables):
+	var added : bool = false
+	if(len(c1.variables) > 0):
+		var t1 : Formula = c1.duplicate()
+		t1.replace_variables(vars)
+		var solution : Variables = t1.solve_equation(Formula.make_minus(other, c2), vars.duplicate())
+		if(solution.is_match() and vars.merge_without_conflicts(solution)):
+			added = true
+	if(len(c2.variables) > 0):
+		var t2 : Formula = c2.duplicate()
+		t2.replace_variables(vars)
+		var solution : Variables = t2.solve_equation(Formula.make_minus(other, c1), vars.duplicate())
+		if(solution.is_match() and vars.merge_without_conflicts(solution)):
+			added = true
+	return added
+
+func solve_minus(other : Formula, vars : Variables) -> bool:
+	var added : bool = false
+	if(len(c1.variables) > 0):
+		var t1 : Formula = c1.duplicate()
+		t1.replace_variables(vars)
+		var solution : Variables = t1.solve_equation(Formula.make_plus(other, c2), vars.duplicate())
+		if(solution.is_match() and vars.merge_without_conflicts(solution)):
+			added = true
+	if(len(c2.variables) > 0):
+		var t2 : Formula = c2.duplicate()
+		t2.replace_variables(vars)
+		var solution : Variables = t2.solve_equation(Formula.make_minus(c1, other), vars.duplicate())
+		if(solution.is_match() and vars.merge_without_conflicts(solution)):
+			added = true
+	return added
 
 func solve_equation(other : Formula, vars : Variables = Variables.new()) -> Variables:
-	cleanup()
-	other.cleanup()
+	cleanup(false)
+	other.cleanup(false)
 	match(type):
 		Type.False: return Variables.new()
 		Type.Number:
@@ -267,34 +317,26 @@ func solve_equation(other : Formula, vars : Variables = Variables.new()) -> Vari
 					return Variables.new()
 			return other.solve_equation(self)
 		Type.Variable:
-			if(not vars.insert_without_conflicts(varnum, other)):
+			if(name == "?"): # FIXME make more robust
+				vars.insert_any_variable(varnum)
+			elif(not vars.insert_without_conflicts(varnum, other)):
 				return Variables.new()
 			else:
-				other.replace_variables(vars)
-				vars.variables[varnum] = other
+				var value : Formula = other.duplicate()
+				value.replace_variables(vars)
+				value.set_bounds(self.bounds)
+				vars.variables[varnum] = value
 		Type.Plus:
-			var added : bool = false
-			if(len(c1.variables) > 0):
-				var solution : Variables = c1.solve_equation(Formula.make_minus(other, c2), vars.duplicate())
-				if(solution and vars.merge_without_conflicts(solution)):
-					added = true
-			if(len(c2.variables) > 0):
-				var solution : Variables = c2.solve_equation(Formula.make_minus(other, c1), vars.duplicate())
-				if(solution and vars.merge_without_conflicts(solution)):
-					added = true
-			if(not added):
+			if(not solve_plus(other, vars)):
+				return Variables.new()
+		Type.PlusPlus:
+			if(not solve_plus(other, vars)):
 				return Variables.new()
 		Type.Minus:
-			var added : bool = false
-			if(len(c1.variables) > 0):
-				var solution : Variables = c1.solve_equation(Formula.make_plus(other, c2), vars.duplicate())
-				if(solution and vars.merge_without_conflicts(solution)):
-					added = true
-			if(len(c2.variables) > 0):
-				var solution : Variables = c2.solve_equation(Formula.make_minus(c1, other), vars.duplicate())
-				if(solution and vars.merge_without_conflicts(solution)):
-					added = true
-			if(not added):
+			if(not solve_minus(other, vars)):
+				return Variables.new()
+		Type.MinusMinus:
+			if(not solve_minus(other, vars)):
 				return Variables.new()
 		Type.Slash:
 			vars.merge(c1.solve_equation(other))
@@ -303,10 +345,12 @@ func solve_equation(other : Formula, vars : Variables = Variables.new()) -> Vari
 			assert(false)
 	return vars
 
+func is_form_operator() -> bool:
+	return type != Type.PlusPlus and type != Type.MinusMinus
+
 func generalizes(other : Formula, rewriting : bool = false, found : Variables = Variables.new()) -> bool:
-	assertions()
-	other.assertions()
-	if(not rewriting and other.type == Type.Number and len(variables) > 0):
+	var form_match : bool = rewriting and is_form_operator()
+	if(not form_match and other.type == Type.Number and len(variables) > 0):
 		var solution : Variables = solve_equation(other, found)
 		if(solution.is_match()):
 			found.merge_without_conflicts(solution)
@@ -348,10 +392,22 @@ func generalizes(other : Formula, rewriting : bool = false, found : Variables = 
 			if(other.type != Type.Plus):
 				return false
 			return c1.generalizes(other.c1, rewriting, found) and c2.generalizes(other.c2, rewriting, found)
+		Type.PlusPlus:
+			var calculated : Formula = self.duplicate()
+			calculated.replace_variables(found)
+			if(calculated.type == Type.PlusPlus):
+				return false
+			return calculated.generalizes(other, rewriting, found)
 		Type.Minus:
 			if(other.type != Type.Minus):
 				return false
 			return c1.generalizes(other.c1, rewriting, found) and c2.generalizes(other.c2, rewriting, found)
+		Type.MinusMinus:
+			var calculated : Formula = self.duplicate()
+			calculated.replace_variables(found)
+			if(calculated.type == Type.MinusMinus):
+				return false
+			return calculated.generalizes(other, rewriting, found)
 		Type.Slash:
 			if(other.type != Type.Slash):
 				return false
@@ -376,7 +432,7 @@ func generalizes(other : Formula, rewriting : bool = false, found : Variables = 
 
 func duplicate() -> Formula:
 	var x := Formula.new()
-	x.copy(self)
+	x.copy(self, true)
 	return x
 
 func _to_string():
@@ -392,8 +448,12 @@ func _to_string():
 			return "?"
 		Type.Plus:
 			return c1._to_string() + " + " + c2._to_string()
+		Type.PlusPlus:
+			return c1._to_string() + " ++ " + c2._to_string()
 		Type.Minus:
 			return c1._to_string() + " - (" + c2._to_string() + ")"
+		Type.MinusMinus:
+			return c1._to_string() + " -- (" + c2._to_string() + ")"
 		Type.Slash:
 			if(c1.type == Type.Number and c2.type == Type.Number):
 				return c1._to_string() + " / " + c2._to_string()
@@ -409,10 +469,7 @@ func _to_string():
 
 func set_bounds(b : Array[int]):
 	self.bounds = b
-	if(c1):
-		c1.set_bounds(b)
-	if(c2):
-		c1.set_bounds(b)
+	for_each_child(func (c): c.set_bounds(b))
 	
 func is_unbounded():
 	if(type != Type.Number):

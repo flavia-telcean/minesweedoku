@@ -147,6 +147,11 @@ func flag_count() -> int:
 			fcount += 1
 	return fcount
 
+func get_bounds() -> Array[int]:
+	var bounds : Array[int]
+	bounds.assign(range(max_neighbours + 1))
+	return bounds
+
 func region_at_cell(t : Tile, i : int) -> Region:
 	if(not t.reveal or t.is_known_mine()):
 		return
@@ -158,10 +163,8 @@ func region_at_cell(t : Tile, i : int) -> Region:
 		region.cells.append(tiles[x].cell))
 	region.id = i
 	region.formula = Formula.make_number(remaining)
-	var bounds : Array[int]
-	bounds.assign(range(max_neighbours + 1))
-	region.formula.set_bounds(bounds)
-			
+	region.formula.set_bounds(get_bounds())
+	
 	return region
 
 func special_regions() -> Array[Region]:

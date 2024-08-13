@@ -3,6 +3,7 @@ class_name Region
 var cells : Array[Cell]
 var formula : Formula
 var id : int
+var hidden : bool = false
 
 func remove_mine(mine_grid : MineGrid, old_id : int):
 	cells = cells.filter(func(x): return x.id != old_id)
@@ -47,6 +48,8 @@ func cell_ids() -> Array[int]:
 
 func create_line(mine_grid : MineGrid):
 	mine_grid.remove_line(id)
+	if(hidden):
+		return
 	mine_grid.create_line(cell_ids(), id, str(formula))
 
 func remove_line(mine_grid : MineGrid):

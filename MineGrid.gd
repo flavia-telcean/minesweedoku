@@ -177,6 +177,7 @@ func special_regions() -> Array[Region]:
 	var bounds : Array[int]
 	bounds.assign(range(mine_count() + 1))
 	region_whole.formula.set_bounds(bounds)
+	region_whole.hidden = true
 	return [region_whole]
 
 func make_regions() -> Array[Region]:
@@ -245,8 +246,6 @@ func get_point_position(id : int, region_id : int) -> Vector2:
 	return cell_positions[position_id]
 
 func create_line(cells : Array[int], id : int, label : String):
-	if(len(cells) > 12):
-		return
 	cells.map(func(x): tiles[x].cell.lines.append(id))
 	var positions : Array[Vector2] = []
 	positions.assign(cells.map(func(x): return get_point_position(x, id)))

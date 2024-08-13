@@ -150,6 +150,7 @@
 		"name": "Weaken into Gte",
 		"region_action": {
 			"formula": "(x)+",
+			"hidden": true,
 			"id": 1,
 			"type": "NewRegion"
 		},
@@ -161,6 +162,7 @@
 		"name": "Weaken into Lte",
 		"region_action": {
 			"formula": "(x)-",
+			"hidden": true,
 			"id": 1,
 			"type": "NewRegion"
 		},

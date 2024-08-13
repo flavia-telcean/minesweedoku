@@ -11,6 +11,7 @@ enum Type {
 var type : Type
 var regionformula : Formula
 var regionid : int
+var regionhidden : bool = false
 var bounds : Array[int]
 var name : String
 
@@ -28,6 +29,8 @@ static func from_json(d : Dictionary) -> Action:
 			a.regionid = d["id"]
 			var parser := Parser.new()
 			a.regionformula = parser.parse_string(d["formula"])
+			if("hidden" in d):
+				a.regionhidden = d["hidden"]
 		_:
 			assert(false)
 	return a
@@ -40,6 +43,8 @@ func to_json() -> Dictionary:
 	if(type == Type.NewRegion):
 		x["id"] = regionid
 		x["formula"] = str(regionformula)
+		if(regionhidden == true):
+			x["hidden"] = true
 	return x
 
 func apply(solver : Solver, mine_grid : MineGrid, variables : Variables, cells : Array[Cell], applicationid : int):
@@ -63,6 +68,7 @@ func apply(solver : Solver, mine_grid : MineGrid, variables : Variables, cells :
 			var region := Region.new()
 			region.cells = cells.duplicate()
 			region.id = hash(applicationid + regionid)
+			region.hidden = regionhidden
 			region.formula = regionformula.duplicate()
 			region.formula.replace_variables(variables)
 			solver.new_region(region)
@@ -83,15 +89,19 @@ func is_unbounded(variables : Variables) -> bool:
 func change_type(t : Type):
 	if(type != Type.NewRegion and t == Type.NewRegion):
 		regionformula = Formula.make_false()
+		regionhidden = false
 		regionid = 0
 	else:
 		regionformula = null
+		regionhidden = false
 		regionid = 0
 	type = t
 
 func on_edited(item : TreeItem):
 	if(item.get_text(0) == "ID"):
 		regionid = item.get_text(1).to_int()
+	if(item.get_text(0) == "Hidden"):
+		regionhidden = item.get_range(1)
 	else:
 		change_type(int(item.get_range(1)))
 		create_menu(item)
@@ -113,4 +123,11 @@ func create_menu(parent : TreeItem):
 		var id_item = tree.create_item(menu)
 		id_item.set_text(0, "ID")
 		id_item.set_text(1, str(regionid))
+		id_item.set_editable(1, true)
+		var hidden_item = tree.create_item(menu)
+		hidden_item.set_text(0, "Hidden")
+		hidden_item.set_cell_mode(1, TreeItem.CELL_MODE_CHECK)
+		hidden_item.set_checked(1, regionhidden)
+		hidden_item.set_metadata(1, self)
+		hidden_item.set_editable(1, true)
 		regionformula.create_menu(menu)
